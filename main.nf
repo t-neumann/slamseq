@@ -30,7 +30,12 @@ def helpMessage() {
     nextflow run nf-core/slamseq --reads '*_R{1,2}.fastq.gz' -profile standard,docker
 
     Mandatory arguments:
-      --reads                       Path to input data (must be surrounded with quotes)
+      --reads                       Path to single-end read files (bam or fastq)
+         or
+      --sampleList                  Text file containing the following unnamed columns:
+                                    path to fastq, sample name, sample type, time point
+                                    (see Slamdunk documentation for details)
+      
       --genome                      Name of iGenomes reference
       -profile                      Configuration profile to use. Can use multiple (comma separated)
                                     Available: standard, conda, docker, singularity, awsbatch, test
@@ -40,6 +45,8 @@ def helpMessage() {
 
     References                      If not specified in the configuration file or you wish to overwrite any of the references.
       --fasta                       Path to Fasta reference
+      --bed                         Path to 3' UTR counting window reference
+      --mapping                     Path to 3' UTR multimapper recovery reference
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -62,9 +69,10 @@ if (params.help){
     exit 0
 }
 
-// TODO nf-core: Add any reference files that are needed
 // Configurable reference genomes
-fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
+if (!params.fasta) {
+	params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
+}
 if ( params.fasta ){
     fasta = file(params.fasta)
     if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.fasta}"
@@ -101,26 +109,26 @@ output_docs = file("$baseDir/docs/output.md")
 /*
  * Create a channel for input read files
  */
- if(params.readPaths){
-     if(params.singleEnd){
-         Channel
-             .from(params.readPaths)
-             .map { row -> [ row[0], [file(row[1][0])]] }
-             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-             .into { read_files_fastqc; read_files_trimming }
-     } else {
-         Channel
-             .from(params.readPaths)
-             .map { row -> [ row[0], [file(row[1][0]), file(row[1][1])]] }
-             .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-             .into { read_files_fastqc; read_files_trimming }
-     }
- } else {
-     Channel
-         .fromFilePairs( params.reads, size: params.singleEnd ? 1 : 2 )
-         .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --singleEnd on the command line." }
-         .into { read_files_fastqc; read_files_trimming }
+ if(params.reads){
+ 	params.sampleList = "sampleList.txt"
+    fileHandler = new File(sampleList)
+    fileHandler.newWriter().withWriter { file ->
+        file << "$workflow.projectDir" + "/tests/dataset01/input/test_22_1.fastq.gz\ttest_1\tchase\0\n"
+        file << "$workflow.projectDir" + "/tests/dataset01/input/test_22_2.fastq.gz\ttest_2\tchase\0\n"
+    }
  }
+ 
+ Channel
+    .fromPath( params.sampleList )
+    .splitCsv( header: false, sep: '\t' )
+    .map { it -> tuple(it[1], file(it[0])) }
+    .set { rawFiles }
+ 
+ Channel
+     .from(params.readPaths)
+     .map { row -> [ row[0], [file(row[1][0])]] }
+     .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
+     .into { read_files_fastqc; read_files_trimming }
 
 
 // Header log info
@@ -140,7 +148,6 @@ summary['Run Name']     = custom_runName ?: workflow.runName
 // TODO nf-core: Report custom parameters here
 summary['Reads']        = params.reads
 summary['Fasta Ref']    = params.fasta
-summary['Data Type']    = params.singleEnd ? 'Single-End' : 'Paired-End'
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
 summary['Max Time']     = params.max_time

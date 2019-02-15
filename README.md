@@ -27,4 +27,4 @@ The nf-core/slamseq pipeline comes with documentation about the pipeline, found 
 <!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
 
 ### Credits
-nf-core/slamseq was originally written by Tobias Neumann.
+nf-core/slamseq was originally written by Tobias Neumann and Jesse Lipp.

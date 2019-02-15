@@ -1,5 +1,5 @@
 FROM nfcore/base
-LABEL authors="Tobias Neumann" \
+LABEL authors="Tobias Neumann, Jesse Lipp" \
       description="Docker image containing all requirements for nf-core/slamseq pipeline"
 
 COPY environment.yml /
