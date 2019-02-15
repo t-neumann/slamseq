@@ -4,7 +4,7 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - slamdunk=0.3.3
+  - slamdunk=0.3.4
   - trim-galore=0.5.0
   - fastqc=0.11.8
   - multiqc=1.6

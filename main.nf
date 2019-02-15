@@ -35,7 +35,7 @@ def helpMessage() {
       --sampleList                  Text file containing the following unnamed columns:
                                     path to fastq, sample name, sample type, time point
                                     (see Slamdunk documentation for details)
-      
+
       --genome                      Name of iGenomes reference
       -profile                      Configuration profile to use. Can use multiple (comma separated)
                                     Available: standard, conda, docker, singularity, awsbatch, test
@@ -69,7 +69,7 @@ if (params.help){
     exit 0
 }
 
-// Configurable reference genomes
+// Reference genome fasta
 if (!params.fasta) {
 	params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
 }
@@ -77,6 +77,37 @@ if ( params.fasta ){
     fasta = file(params.fasta)
     if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.fasta}"
 }
+
+// Configurable reference genomes
+
+if (!params.bed) {
+	gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
+
+  Channel
+        .fromPath(gtf, checkIfExists: true)
+        .ifEmpty { exit 1, "GTF annotation file not found: ${gtf}" }
+        .set{ gtfChannel }
+
+  process gtf2bed {
+        tag "$gtf"
+
+        input:
+        file gtf from gtfChannel
+
+        output:
+        file "*.bed" into utrChannel
+
+        script:
+        """
+        gtf2bed.py $gtf | sort -k1,1 -k2,2n > ${gtf.baseName}.3utr.bed
+        """
+    }
+} else {
+  utrChannel = Channel
+        .fromPath(params.bed, checkIfExists: true)
+        .ifEmpty { exit 1, "BED 3' UTR annotation file not found: ${params.bed}" }
+}
+
 //
 // NOTE - THIS IS NOT USED IN THIS PIPELINE, EXAMPLE ONLY
 // If you want to use the above in a process, define the following:
@@ -111,25 +142,18 @@ output_docs = file("$baseDir/docs/output.md")
  */
  if(params.reads){
  	params.sampleList = "sampleList.txt"
-    fileHandler = new File(sampleList)
+    fileHandler = new File(params.sampleList)
     fileHandler.newWriter().withWriter { file ->
         file << "$workflow.projectDir" + "/tests/dataset01/input/test_22_1.fastq.gz\ttest_1\tchase\0\n"
         file << "$workflow.projectDir" + "/tests/dataset01/input/test_22_2.fastq.gz\ttest_2\tchase\0\n"
     }
  }
- 
+
  Channel
     .fromPath( params.sampleList )
     .splitCsv( header: false, sep: '\t' )
     .map { it -> tuple(it[1], file(it[0])) }
     .set { rawFiles }
- 
- Channel
-     .from(params.readPaths)
-     .map { row -> [ row[0], [file(row[1][0])]] }
-     .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-     .into { read_files_fastqc; read_files_trimming }
-
 
 // Header log info
 log.info """=======================================================
@@ -213,21 +237,25 @@ process get_software_versions {
 /*
  * STEP 1 - FastQC
  */
-process fastqc {
-    tag "$name"
-    publishDir "${params.outdir}/fastqc", mode: 'copy',
-        saveAs: {filename -> filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"}
 
-    input:
-    set val(name), file(reads) from read_files_fastqc
+process trim {
 
-    output:
-    file "*_fastqc.{zip,html}" into fastqc_results
+     tag { id }
 
-    script:
-    """
-    fastqc -q $reads
-    """
+     input:
+     set val(id), file(fastq) from rawFiles
+
+     output:
+     set val(id), file("trimmed/${id}.fastq.gz") into trimmedFiles
+     file("trimmed/*trimming_report.txt") into trimgaloreQC
+
+     script:
+     """
+     mv ${fastq} ${id}.fastq.gz
+     mkdir -p trimmed
+     trim_galore ${id}.fastq.gz --stringency 3 --output_dir trimmed
+     mv trimmed/*.fq.gz trimmed/${id}.fastq.gz
+     """
 }
 
 
