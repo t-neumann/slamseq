@@ -134,8 +134,8 @@ if( workflow.profile == 'awsbatch') {
 }
 
 // Stage config files
-multiqc_config = file(params.multiqc_config)
-output_docs = file("$baseDir/docs/output.md")
+ch_multiqc_config = Channel.fromPath(params.multiqc_config)
+ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
 /*
  * Create a channel for input read files
@@ -268,7 +268,7 @@ process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
     input:
-    file multiqc_config
+    file multiqc_config from ch_multiqc_config
 
     file ("TrimGalore/*{.zip,trimming_report.txt}") from trimgaloreQC.collect().ifEmpty([])
     file ('software_versions/*') from software_versions_yaml
@@ -296,7 +296,7 @@ process output_documentation {
     publishDir "${params.outdir}/Documentation", mode: 'copy'
 
     input:
-    file output_docs
+    file output_docs from ch_output_docs
 
     output:
     file "results_description.html"
