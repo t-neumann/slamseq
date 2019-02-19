@@ -222,11 +222,11 @@ process get_software_versions {
     file 'software_versions_mqc.yaml' into software_versions_yaml
 
     script:
-    // TODO nf-core: Get all tools to print their version number here
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
-    fastqc --version > v_fastqc.txt
+    trim_galore --version > v_trimgalore.txt
+    slamdunk --version > v_slamdunk.txt
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py > software_versions_mqc.yaml
     """
@@ -246,15 +246,15 @@ process trim {
      set val(id), file(fastq) from rawFiles
 
      output:
-     set val(id), file("trimmed/${id}.fastq.gz") into trimmedFiles
-     file("trimmed/*trimming_report.txt") into trimgaloreQC
+     set val(id), file("TrimGalore/${id}.fastq.gz") into trimmedFiles
+     file("TrimGalore/*{.zip,trimming_report.txt}") into trimgaloreQC
 
      script:
      """
      mv ${fastq} ${id}.fastq.gz
      mkdir -p trimmed
      trim_galore ${id}.fastq.gz --stringency 3 --output_dir trimmed
-     mv trimmed/*.fq.gz trimmed/${id}.fastq.gz
+     mv TrimGalore/*.fq.gz TrimGalore/${id}.fastq.gz
      """
 }
 
@@ -264,12 +264,13 @@ process trim {
  * STEP 2 - MultiQC
  */
 process multiqc {
+
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
 
     input:
     file multiqc_config
-    // TODO nf-core: Add in log files from your new processes for MultiQC to find!
-    file ('fastqc/*') from fastqc_results.collect().ifEmpty([])
+
+    file ("TrimGalore/*{.zip,trimming_report.txt}") from trimgaloreQC.collect().ifEmpty([])
     file ('software_versions/*') from software_versions_yaml
     file workflow_summary from create_workflow_summary(summary)
 
