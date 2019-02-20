@@ -11,7 +11,6 @@
 
 
 def helpMessage() {
-    // TODO nf-core: Add to this help message with new command line parameters
     log.info"""
     =======================================================
                                               ,--./,-.
@@ -40,13 +39,14 @@ def helpMessage() {
       -profile                      Configuration profile to use. Can use multiple (comma separated)
                                     Available: standard, conda, docker, singularity, awsbatch, test
 
-    Options:
-      --singleEnd                   Specifies that the input is single end reads
-
     References                      If not specified in the configuration file or you wish to overwrite any of the references.
       --fasta                       Path to Fasta reference
       --bed                         Path to 3' UTR counting window reference
       --mapping                     Path to 3' UTR multimapper recovery reference
+
+    Processing parameters
+      --baseQuality                 Minimum base quality to filter reads
+      --readLength                  Read length of processed reads
 
     Other options:
       --outdir                      The output directory where the results will be saved
@@ -78,6 +78,10 @@ if ( params.fasta ){
     if( !fasta.exists() ) exit 1, "Fasta file not found: ${params.fasta}"
 }
 
+Channel
+    .fromPath( fasta )
+    .set { fastaChannel }
+
 // Configurable reference genomes
 
 if (!params.bed) {
@@ -108,13 +112,8 @@ if (!params.bed) {
         .ifEmpty { exit 1, "BED 3' UTR annotation file not found: ${params.bed}" }
 }
 
-//
-// NOTE - THIS IS NOT USED IN THIS PIPELINE, EXAMPLE ONLY
-// If you want to use the above in a process, define the following:
-//   input:
-//   file fasta from fasta
-//
-
+// Read length must be supplied
+if ( !params.readLength ) exit 1, "Read length must be supplied."
 
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
@@ -235,9 +234,8 @@ process get_software_versions {
 
 
 /*
- * STEP 1 - FastQC
+ * STEP 1 - TrimGalore!
  */
-
 process trim {
 
      tag { id }
@@ -247,21 +245,56 @@ process trim {
 
      output:
      set val(id), file("TrimGalore/${id}.fastq.gz") into trimmedFiles
-     file("TrimGalore/*{.zip,trimming_report.txt}") into trimgaloreQC
+     file ("TrimGalore/*.txt") into trimgaloreQC
+     file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
 
      script:
      """
      mv ${fastq} ${id}.fastq.gz
-     mkdir -p trimmed
-     trim_galore ${id}.fastq.gz --stringency 3 --output_dir trimmed
+     mkdir -p TrimGalore
+     trim_galore ${id}.fastq.gz --stringency 3 --fastqc --output_dir TrimGalore
      mv TrimGalore/*.fq.gz TrimGalore/${id}.fastq.gz
      """
 }
 
+/*
+ * STEP 2 - Slamdunk
+ */
+ process slamdunk {
+
+     tag { id }
+
+     publishDir path: "${outputDir}", mode: 'copy', overwrite: 'true'
+
+     input:
+     set val(id), file(fastq) from trimmedFiles
+     each file(fasta) from fastaChannel
+     each file(bed) from utrChannel
+
+     output:
+     file("count/*") into slamdunkCount
+     file("map/*") into slamdunkMap
+     file("filter/*") into slamdunkFilter
+     file("snp/*") into slamdunkSnp
+     file("stats/*") into slamdunkStats
+
+     script:
+     """
+     slamdunk all -b ${bed} -r ${fasta} -o . -t ${task.cpus} -rl ${params.readLength} -mbq ${params.baseQuality} -5 12 -n 100 -m -c 2 -mv 0.2 --skip-sam ${fastq}
+
+     mkdir -p ./stats
+     alleyoop summary -o ./stats/${id}_summary.txt -t ./count ./filter/*bam
+     alleyoop rates -o ./stats -r ${fasta} -t ${task.cpus} -mq ${params.baseQuality} ./filter/*.bam
+     alleyoop utrrates -o ./stats -r ${fasta} -m -t ${task.cpus} -b ${bed} -l ${params.readLength} -mq ${params.baseQuality} ./filter/*.bam
+     alleyoop tcperreadpos -o ./stats -r ${fasta} -s ./snp/ -l ${params.readLength} -t ${task.cpus} -mq ${params.baseQuality} ./filter/*bam
+     alleyoop tcperutrpos -o ./stats -r ${fasta} -s ./snp/ -l ${params.readLength} -b ${bed} -t ${task.cpus} -mq ${params.baseQuality} ./filter/*bam
+     """
+ }
+
 
 
 /*
- * STEP 2 - MultiQC
+ * STEP 3 - MultiQC
  */
 process multiqc {
 
@@ -270,7 +303,8 @@ process multiqc {
     input:
     file multiqc_config from ch_multiqc_config
 
-    file ("TrimGalore/*{.zip,trimming_report.txt}") from trimgaloreQC.collect().ifEmpty([])
+    file ("TrimGalore/*") from trimgaloreQC.collect().ifEmpty([])
+    file ("TrimGalore/FastQC/*") from trimgaloreFastQC.collect().ifEmpty([])
     file ('software_versions/*') from software_versions_yaml
     file workflow_summary from create_workflow_summary(summary)
 
