@@ -252,7 +252,7 @@ process trim {
      """
      mv ${fastq} ${id}.fastq.gz
      mkdir -p TrimGalore
-     trim_galore ${id}.fastq.gz --stringency 3 --fastqc --output_dir TrimGalore
+     trim_galore ${id}.fastq.gz --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
      mv TrimGalore/*.fq.gz TrimGalore/${id}.fastq.gz
      """
 }
@@ -264,7 +264,7 @@ process trim {
 
      tag { id }
 
-     publishDir path: "${outputDir}", mode: 'copy', overwrite: 'true'
+     publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
 
      input:
      set val(id), file(fastq) from trimmedFiles
@@ -283,7 +283,6 @@ process trim {
      slamdunk all -b ${bed} -r ${fasta} -o . -t ${task.cpus} -rl ${params.readLength} -mbq ${params.baseQuality} -5 12 -n 100 -m -c 2 -mv 0.2 --skip-sam ${fastq}
 
      mkdir -p ./stats
-     alleyoop summary -o ./stats/${id}_summary.txt -t ./count ./filter/*bam
      alleyoop rates -o ./stats -r ${fasta} -t ${task.cpus} -mq ${params.baseQuality} ./filter/*.bam
      alleyoop utrrates -o ./stats -r ${fasta} -m -t ${task.cpus} -b ${bed} -l ${params.readLength} -mq ${params.baseQuality} ./filter/*.bam
      alleyoop tcperreadpos -o ./stats -r ${fasta} -s ./snp/ -l ${params.readLength} -t ${task.cpus} -mq ${params.baseQuality} ./filter/*bam
@@ -291,10 +290,34 @@ process trim {
      """
  }
 
+ /*
+  * STEP 3 - Summary
+  */
+  process summary {
 
+      publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
+
+      input:
+      file("filter/*") from slamdunkFilter.collect()
+      file("count/*") from slamdunkCount.collect()
+
+      output:
+      file("summary*.txt") into summaryQC
+
+      script:
+      """
+      #alleyoop summary -o summary.txt -t ./count ./filter/*bam
+      alleyoop summary -o summary.txt ./filter/*bam
+      """
+  }
+
+ slamdunkStats
+     .flatten()
+     .filter( ~/.*csv|.*summary.txt/ )
+     .set { alleyoopQC }
 
 /*
- * STEP 3 - MultiQC
+ * STEP 4 - MultiQC
  */
 process multiqc {
 
@@ -303,8 +326,10 @@ process multiqc {
     input:
     file multiqc_config from ch_multiqc_config
 
+    file("alleyoop/*") from alleyoopQC.collect().ifEmpty([])
+    file("summary*.txt") from summaryQC.collect().ifEmpty([])
     file ("TrimGalore/*") from trimgaloreQC.collect().ifEmpty([])
-    file ("TrimGalore/FastQC/*") from trimgaloreFastQC.collect().ifEmpty([])
+    file ("TrimGalore/*") from trimgaloreFastQC.collect().ifEmpty([])
     file ('software_versions/*') from software_versions_yaml
     file workflow_summary from create_workflow_summary(summary)
 
@@ -315,9 +340,9 @@ process multiqc {
     script:
     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-    // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
+
     """
-    multiqc -f $rtitle $rfilename --config $multiqc_config .
+    multiqc -m fastqc -m cutadapt -m slamdunk -f $rtitle $rfilename --config $multiqc_config .
     """
 }
 
