@@ -29,8 +29,6 @@ def helpMessage() {
     nextflow run nf-core/slamseq --reads '*_R{1,2}.fastq.gz' -profile standard,docker
 
     Mandatory arguments:
-      --reads                       Path to single-end read files (bam or fastq)
-         or
       --sampleList                  Text file containing the following unnamed columns:
                                     path to fastq, sample name, sample type, time point
                                     (see Slamdunk documentation for details)
@@ -136,18 +134,6 @@ if( workflow.profile == 'awsbatch') {
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
-/*
- * Create a channel for input read files
- */
- if(params.reads){
- 	params.sampleList = "sampleList.txt"
-    fileHandler = new File(params.sampleList)
-    fileHandler.newWriter().withWriter { file ->
-        file << "$workflow.projectDir" + "/tests/dataset01/input/test_22_1.fastq.gz\ttest_1\tchase\0\n"
-        file << "$workflow.projectDir" + "/tests/dataset01/input/test_22_2.fastq.gz\ttest_2\tchase\0\n"
-    }
- }
-
  Channel
     .fromPath( params.sampleList )
     .splitCsv( header: false, sep: '\t' )
@@ -168,8 +154,6 @@ def summary = [:]
 summary['Pipeline Name']  = 'nf-core/slamseq'
 summary['Pipeline Version'] = workflow.manifest.version
 summary['Run Name']     = custom_runName ?: workflow.runName
-// TODO nf-core: Report custom parameters here
-summary['Reads']        = params.reads
 summary['Fasta Ref']    = params.fasta
 summary['Max Memory']   = params.max_memory
 summary['Max CPUs']     = params.max_cpus
@@ -250,7 +234,7 @@ process trim {
 
      script:
      """
-     mv ${fastq} ${id}.fastq.gz
+     #mv ${fastq} ${id}.fastq.gz
      mkdir -p TrimGalore
      trim_galore ${id}.fastq.gz --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
      mv TrimGalore/*.fq.gz TrimGalore/${id}.fastq.gz
