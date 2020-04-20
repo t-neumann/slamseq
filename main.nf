@@ -312,7 +312,7 @@ process trim {
      each file(fasta) from fastaSnpChannel
 
      output:
-     set val(name), file("snp") into slamdunkSnp
+     set val(name), file("snp/*vcf") into slamdunkSnp
 
      script:
      """
@@ -353,7 +353,7 @@ slamdunkResultsChannel1.subscribe{ println it}
       """
       slamdunk count -o count \
          -r ${fasta} \
-         -s ${snp} \
+         -s . \
          -b ${bed} \
          -l ${params.readLength} \
          -t ${task.cpus} \
