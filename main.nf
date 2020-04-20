@@ -324,8 +324,9 @@ process trim {
      """
  }
 
+// Join by column 3 (reads)
  slamdunkCount
-     .join(slamdunkSnp)
+     .join(slamdunkSnp, by: [3])
      .into{ slamdunkResultsChannel ;
             slamdunkResultsChannel1 }
 
