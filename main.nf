@@ -78,7 +78,8 @@ if ( params.fasta ){
 
 Channel
     .fromPath( fasta )
-    .set { fastaChannel }
+    .into { fastaMapChannel ;
+            fastaSnpChannel }
 
 // Configurable reference genomes
 
@@ -252,10 +253,10 @@ process trim {
 
      input:
      set val(parameters), file(fastq) from trimmedFiles
-     each file(fasta) from fastaChannel
+     each file(fasta) from fastaMapChannel
 
      output:
-     set val(parameters), file("map/*") into slamdunkMap
+     set val(parameters), file("map/*bam") into slamdunkMap
 
      script:
      """
@@ -282,7 +283,9 @@ process trim {
       each file(bed) from utrChannel
 
       output:
-      file("filter/*") into slamdunkFilter
+      set val(parameters), file("filter/*bam") into slamdunkFilter,
+                               slamdunkSnp,
+                               slamdunkCount
 
       script:
       """
@@ -292,6 +295,32 @@ process trim {
          ${map}
       """
   }
+
+/*
+ * STEP 3 - Snp
+ */
+ process snp {
+
+     publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
+
+     tag { parameters.name }
+
+     input:
+     set val(parameters), file(filter) from slamdunkFilter
+
+     output:
+     file("snp/*vcf") into slamdunkSnp
+     each file(fasta) from fastaSnpChannel
+
+     script:
+     """
+     slamdunk snp -o snp \
+        -r ${fasta}
+        -f 0.2 \
+        -t ${task.cpus} \
+        ${filter}
+     """
+ }
 
  /*
   * STEP 3 - Summary
