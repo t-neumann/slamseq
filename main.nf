@@ -229,14 +229,14 @@ process trim {
      val(parameters) from rawFiles
 
      output:
-     set val(parameters), file("TrimGalore/${id}.fastq.gz") into trimmedFiles
+     set val(parameters), file("TrimGalore/${parameters.name}.fastq.gz") into trimmedFiles
      file ("TrimGalore/*.txt") into trimgaloreQC
      file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
 
      script:
      """
      mkdir -p TrimGalore
-     trim_galore ${parameters.reads}.fastq.gz --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
+     trim_galore ${parameters.reads} --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
      mv TrimGalore/*.fq.gz TrimGalore/${parameters.name}.fastq.gz
      """
 }
@@ -246,17 +246,16 @@ process trim {
  */
  process map {
 
-     publishDir path: "${params.outdir}/map/*", mode: 'copy', overwrite: 'true'
+     publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
 
      tag { parameters.name }
 
      input:
      set val(parameters), file(fastq) from trimmedFiles
      each file(fasta) from fastaChannel
-     each file(bed) from utrChannel
 
      output:
-     file("map/*") into slamdunkMap
+     set val(parameters), file("map/*") into slamdunkMap
 
      script:
      """
@@ -268,6 +267,31 @@ process trim {
         ${fastq}
      """
  }
+
+ /*
+  * STEP 3 - Filter
+  */
+  process filter {
+
+      publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
+
+      tag { parameters.name }
+
+      input:
+      set val(parameters), file(map) from slamdunkMap
+      each file(bed) from utrChannel
+
+      output:
+      file("filter/*") into slamdunkFilter
+
+      script:
+      """
+      slamdunk filter -o filter \
+         -b ${bed} \
+         -t ${task.cpus} \
+         ${map}
+      """
+  }
 
  /*
   * STEP 3 - Summary
