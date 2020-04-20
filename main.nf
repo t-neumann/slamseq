@@ -259,7 +259,7 @@ process trim {
      each file(fasta) from fastaMapChannel
 
      output:
-     set val(parameters), file("map/*bam") into slamdunkMap
+     set val(parameters.name), file("map/*bam") into slamdunkMap
 
      script:
      """
@@ -279,14 +279,14 @@ process trim {
 
       publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
 
-      tag { parameters.name }
+      tag { name }
 
       input:
-      set val(parameters), file(map) from slamdunkMap
+      set val(name), file(map) from slamdunkMap
       each file(bed) from utrFilterChannel
 
       output:
-      set val(parameters), file("filter/*bam*") into slamdunkFilter,
+      set val(name), file("filter/*bam*") into slamdunkFilter,
                                slamdunkCount
 
       script:
@@ -305,14 +305,14 @@ process trim {
 
      publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
 
-     tag { parameters.name }
+     tag { name }
 
      input:
-     set val(parameters), file(filter) from slamdunkFilter
+     set val(name), file(filter) from slamdunkFilter
      each file(fasta) from fastaSnpChannel
 
      output:
-     set val(parameters), file("snp") into slamdunkSnp
+     set val(name), file("snp") into slamdunkSnp
 
      script:
      """
@@ -326,7 +326,7 @@ process trim {
 
 // Join by column 3 (reads)
  slamdunkCount
-     .join(slamdunkSnp, by: [3])
+     .join(slamdunkSnp)
      .into{ slamdunkResultsChannel ;
             slamdunkResultsChannel1 }
 
@@ -339,10 +339,10 @@ slamdunkResultsChannel1.subscribe{ println it}
 
       publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
 
-      tag { parameters.name }
+      tag { name }
 
       input:
-      set val(parameters), file(filter), file(snp) from slamdunkResultsChannel
+      set val(name), file(filter), file(snp) from slamdunkResultsChannel
       each file(bed) from utrCountChannel
       each file(fasta) from fastaCountChannel
 
