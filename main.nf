@@ -134,11 +134,14 @@ if( workflow.profile == 'awsbatch') {
 ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
- Channel
-    .fromPath( params.sampleList )
-    .splitCsv( header: false, sep: '\t' )
-    .map { it -> tuple(it[1], file(it[0])) }
-    .set { rawFiles }
+Channel
+   .fromPath( params.sampleList )
+   .splitCsv( header: true, sep: '\t' )
+   .map { row -> if (row.name == null || row.name == ''){ row.name = file(row.reads).simpleName}; row }
+   .map { row -> if (row.type == null || row.type == ''){ row.type = "pulse"}; row }
+   .map { row -> if (row.time == null || row.time == ''){ row.time = "0"}; row }
+   .set { rawFiles }
+
 
 // Header log info
 log.info """=======================================================
@@ -215,68 +218,60 @@ process get_software_versions {
     """
 }
 
-
-
 /*
  * STEP 1 - TrimGalore!
  */
 process trim {
 
-     tag { id }
+     tag { parameters.name }
 
      input:
-     set val(id), file(fastq) from rawFiles
+     val(parameters) from rawFiles
 
      output:
-     set val(id), file("TrimGalore/${id}.fastq.gz") into trimmedFiles
+     set val(parameters), file("TrimGalore/${id}.fastq.gz") into trimmedFiles
      file ("TrimGalore/*.txt") into trimgaloreQC
      file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
 
      script:
      """
-     #mv ${fastq} ${id}.fastq.gz
      mkdir -p TrimGalore
-     trim_galore ${id}.fastq.gz --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
-     mv TrimGalore/*.fq.gz TrimGalore/${id}.fastq.gz
+     trim_galore ${parameters.reads}.fastq.gz --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
+     mv TrimGalore/*.fq.gz TrimGalore/${parameters.name}.fastq.gz
      """
 }
 
 /*
- * STEP 2 - Slamdunk
+ * STEP 2 - Map
  */
- process slamdunk {
+ process map {
 
-     tag { id }
+     publishDir path: "${params.outdir}/map/*", mode: 'copy', overwrite: 'true'
 
-     publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
+     tag { parameters.name }
 
      input:
-     set val(id), file(fastq) from trimmedFiles
+     set val(parameters), file(fastq) from trimmedFiles
      each file(fasta) from fastaChannel
      each file(bed) from utrChannel
 
      output:
-     file("count/*") into slamdunkCount
      file("map/*") into slamdunkMap
-     file("filter/*") into slamdunkFilter
-     file("snp/*") into slamdunkSnp
-     file("stats/*") into slamdunkStats
 
      script:
      """
-     slamdunk all -b ${bed} -r ${fasta} -o . -t ${task.cpus} -rl ${params.readLength} -mbq ${params.baseQuality} -5 12 -n 100 -m -c 2 -mv 0.2 --skip-sam ${fastq}
-
-     mkdir -p ./stats
-     alleyoop rates -o ./stats -r ${fasta} -t ${task.cpus} -mq ${params.baseQuality} ./filter/*.bam
-     alleyoop utrrates -o ./stats -r ${fasta} -m -t ${task.cpus} -b ${bed} -l ${params.readLength} -mq ${params.baseQuality} ./filter/*.bam
-     alleyoop tcperreadpos -o ./stats -r ${fasta} -s ./snp/ -l ${params.readLength} -t ${task.cpus} -mq ${params.baseQuality} ./filter/*bam
-     alleyoop tcperutrpos -o ./stats -r ${fasta} -s ./snp/ -l ${params.readLength} -b ${bed} -t ${task.cpus} -mq ${params.baseQuality} ./filter/*bam
+     slamdunk map -r ${fasta} -o map \
+        -5 12 -n 100 -t ${task.cpus} \
+        --sampleName ${parameters.name} \
+        --sampleType ${parameters.type} \
+        --sampleTime ${parameters.time} --skip-sam \
+        ${fastq}
      """
  }
 
  /*
   * STEP 3 - Summary
-  */
+  *
   process summary {
 
       publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
@@ -302,7 +297,7 @@ process trim {
 
 /*
  * STEP 4 - MultiQC
- */
+ *
 process multiqc {
 
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
@@ -329,6 +324,7 @@ process multiqc {
     multiqc -m fastqc -m cutadapt -m slamdunk -f $rtitle $rfilename --config $multiqc_config .
     """
 }
+*/
 
 
 
