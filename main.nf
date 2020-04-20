@@ -332,34 +332,57 @@ process trim {
 
 slamdunkResultsChannel1.subscribe{ println it}
 
- /*
-  * STEP 5 - Count
-  */
-  process count {
+/*
+* STEP 5 - Count
+*/
+process count {
 
-      publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
+    publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
 
-      tag { name }
+    tag { name }
 
-      input:
-      set val(name), file(filter), file(snp) from slamdunkResultsChannel
-      each file(bed) from utrCountChannel
-      each file(fasta) from fastaCountChannel
+    input:
+    set val(name), file(filter), file(snp) from slamdunkResultsChannel
+    each file(bed) from utrCountChannel
+    each file(fasta) from fastaCountChannel
 
-      output:
-      file("count/*tsv") into slamdunkCountOut
+    output:
+    set val(name), file("count/*tsv") into slamdunkCountOut
 
-      script:
-      """
-      slamdunk count -o count \
-         -r ${fasta} \
-         -s . \
-         -b ${bed} \
-         -l ${params.readLength} \
-         -t ${task.cpus} \
-         ${filter[0]}
-      """
-  }
+    script:
+    """
+    slamdunk count -o count \
+       -r ${fasta} \
+       -s . \
+       -b ${bed} \
+       -l ${params.readLength} \
+       -t ${task.cpus} \
+       ${filter[0]}
+    """
+}
+
+/*
+* STEP 6 - Collapse
+*/
+process count {
+
+    publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
+
+    tag { name }
+
+    input:
+    set val(name), file(count) from slamdunkCountOut
+
+    output:
+    set val(name), file("collapse/*csv") into slamdunkCollapseOut
+
+    script:
+    """
+    alleyoop collapse -o collapse \
+       -t ${task.cpus} \
+       ${count}
+    """
+}
 
  /*
   * STEP 3 - Summary
