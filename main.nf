@@ -286,7 +286,7 @@ process trim {
       each file(bed) from utrFilterChannel
 
       output:
-      set val(parameters), file("filter/*bam") into slamdunkFilter,
+      set val(parameters), file("filter/*bam*") into slamdunkFilter,
                                slamdunkCount
 
       script:
@@ -312,7 +312,7 @@ process trim {
      each file(fasta) from fastaSnpChannel
 
      output:
-     set val(parameters), file("snp/*vcf") into slamdunkSnp
+     set val(parameters), file("snp") into slamdunkSnp
 
      script:
      """
@@ -320,7 +320,7 @@ process trim {
         -r ${fasta} \
         -f 0.2 \
         -t ${task.cpus} \
-        ${filter}
+        ${filter[0]}
      """
  }
 
@@ -346,7 +346,7 @@ slamdunkResultsChannel1.subscribe{ println it}
       each file(fasta) from fastaCountChannel
 
       output:
-      file("count/*tsv") into slamdunkCount
+      file("count/*tsv") into slamdunkCountOut
 
       script:
       """
@@ -356,7 +356,7 @@ slamdunkResultsChannel1.subscribe{ println it}
          -b ${bed} \
          -l ${params.readLength} \
          -t ${task.cpus} \
-         ${filter}
+         ${filter[0]}
       """
   }
 
