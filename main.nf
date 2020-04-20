@@ -79,7 +79,8 @@ if ( params.fasta ){
 Channel
     .fromPath( fasta )
     .into { fastaMapChannel ;
-            fastaSnpChannel }
+            fastaSnpChannel ;
+            fastaCountChannel }
 
 // Configurable reference genomes
 
@@ -98,7 +99,8 @@ if (!params.bed) {
         file gtf from gtfChannel
 
         output:
-        file "*.bed" into utrChannel
+        file "*.bed" into utrFilterChannel,
+                          utrCountChannel
 
         script:
         """
@@ -106,9 +108,10 @@ if (!params.bed) {
         """
     }
 } else {
-  utrChannel = Channel
+  Channel
         .fromPath(params.bed, checkIfExists: true)
         .ifEmpty { exit 1, "BED 3' UTR annotation file not found: ${params.bed}" }
+        .into { utrFilterChannel ; utrCountChannel }
 }
 
 // Read length must be supplied
@@ -280,11 +283,10 @@ process trim {
 
       input:
       set val(parameters), file(map) from slamdunkMap
-      each file(bed) from utrChannel
+      each file(bed) from utrFilterChannel
 
       output:
       set val(parameters), file("filter/*bam") into slamdunkFilter,
-                               slamdunkSnp,
                                slamdunkCount
 
       script:
@@ -297,7 +299,7 @@ process trim {
   }
 
 /*
- * STEP 3 - Snp
+ * STEP 4 - Snp
  */
  process snp {
 
@@ -307,20 +309,56 @@ process trim {
 
      input:
      set val(parameters), file(filter) from slamdunkFilter
+     each file(fasta) from fastaSnpChannel
 
      output:
-     file("snp/*vcf") into slamdunkSnp
-     each file(fasta) from fastaSnpChannel
+     set val(parameters), file("snp/*vcf") into slamdunkSnp
 
      script:
      """
      slamdunk snp -o snp \
-        -r ${fasta}
+        -r ${fasta} \
         -f 0.2 \
         -t ${task.cpus} \
         ${filter}
      """
  }
+
+ slamdunkCount
+     .join(slamdunkSnp)
+     .into{ slamdunkResultsChannel ;
+            slamdunkResultsChannel1 }
+
+slamdunkResultsChannel1.subscribe{ println it}
+
+ /*
+  * STEP 5 - Count
+  */
+  process count {
+
+      publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
+
+      tag { parameters.name }
+
+      input:
+      set val(parameters), file(filter), file(snp) from slamdunkResultsChannel
+      each file(bed) from utrCountChannel
+      each file(fasta) from fastaCountChannel
+
+      output:
+      file("count/*tsv") into slamdunkCount
+
+      script:
+      """
+      slamdunk count -o count \
+         -r ${fasta} \
+         -s ${snp} \
+         -b ${bed} \
+         -l ${params.readLength} \
+         -t ${task.cpus} \
+         ${filter}
+      """
+  }
 
  /*
   * STEP 3 - Summary
