@@ -297,7 +297,7 @@ process trim {
       output:
       set val(name), file("filter/*bam*") into slamdunkFilter,
                                                slamdunkCount
-      file("filter/*bam*") into slamdunkFilterSummary
+      file("filter/*") into slamdunkFilterSummary
 
       script:
       """
@@ -359,7 +359,7 @@ process count {
 
     output:
     set val(name), file("count/*tsv") into slamdunkCountOut
-    file("count/*tsv") into slamdunkCountAlleyoop
+    file("count/*") into slamdunkCountAlleyoop
 
     script:
     """
@@ -509,15 +509,15 @@ process summary {
     publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
 
     input:
-    file("filter/*bam") from slamdunkFilterSummary.collect()
-    file("count/*tsv") from slamdunkCountAlleyoop.collect()
+    file("filter/*") from slamdunkFilterSummary.collect()
+    file("count/*") from slamdunkCountAlleyoop.collect()
 
     output:
     file("summary*.txt") into summaryQC
 
     script:
     """
-    alleyoop summary -o summary.txt -t ./count filter/*bam
+    alleyoop summary -o summary.txt -t ./count ./filter/*bam
     """
 }
 
