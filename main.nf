@@ -82,7 +82,8 @@ Channel
             fastaSnpChannel ;
             fastaCountChannel ;
             fastaRatesChannel ;
-            fastaUtrRatesChannel }
+            fastaUtrRatesChannel ;
+            fastaReadPosChannel }
 
 // Configurable reference genomes
 
@@ -332,7 +333,8 @@ process trim {
      .join(slamdunkSnp)
      .into{ slamdunkResultsChannel ;
             slamdunkForRatesChannel ;
-            slamdunkForUtrRatesChannel }
+            slamdunkForUtrRatesChannel ;
+            slamdunkForTcPerReadPosChannel }
 
 /*
 * STEP 5 - Count
@@ -431,6 +433,32 @@ process utrrates {
        -r ${fasta} \
        -mq 27 \
        -b ${bed} \
+       -l ${params.readLength} \
+       -t ${task.cpus} \
+       ${filter[0]}
+    """
+}
+
+/*
+* STEP 9 - tcperreadpos
+*/
+process tcperreadpos {
+
+    tag { name }
+
+    input:
+    set val(name), file(filter), file(snp) from slamdunkForTcPerReadPosChannel
+    each file(fasta) from fastaReadPosChannel
+
+    output:
+    set val(name), file("tcperreadpos/*csv") into alleyoopTcPerReadPosOut
+
+    script:
+    """
+    alleyoop tcperreadpos -o tcperreadpos \
+       -r ${fasta} \
+       -s . \
+       -mq 27 \
        -l ${params.readLength} \
        -t ${task.cpus} \
        ${filter[0]}
