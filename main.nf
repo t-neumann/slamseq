@@ -81,7 +81,8 @@ Channel
     .into { fastaMapChannel ;
             fastaSnpChannel ;
             fastaCountChannel ;
-            fastaRatesChannel }
+            fastaRatesChannel ;
+            fastaUtrRatesChannel }
 
 // Configurable reference genomes
 
@@ -101,7 +102,8 @@ if (!params.bed) {
 
         output:
         file "*.bed" into utrFilterChannel,
-                          utrCountChannel
+                          utrCountChannel,
+                          utrratesChannel
 
         script:
         """
@@ -112,7 +114,7 @@ if (!params.bed) {
   Channel
         .fromPath(params.bed, checkIfExists: true)
         .ifEmpty { exit 1, "BED 3' UTR annotation file not found: ${params.bed}" }
-        .into { utrFilterChannel ; utrCountChannel }
+        .into { utrFilterChannel ; utrCountChannel ; utrratesChannel}
 }
 
 // Read length must be supplied
@@ -329,7 +331,8 @@ process trim {
  slamdunkCount
      .join(slamdunkSnp)
      .into{ slamdunkResultsChannel ;
-            slamdunkForRatesChannel }
+            slamdunkForRatesChannel ;
+            slamdunkForUtrRatesChannel }
 
 /*
 * STEP 5 - Count
@@ -395,7 +398,7 @@ process rates {
     each file(fasta) from fastaRatesChannel
 
     output:
-    set val(name), file("rates/*csv") into slamdunkCollapseOut
+    set val(name), file("rates/*csv") into alleyoopRatesOut
 
     script:
     """
@@ -403,7 +406,34 @@ process rates {
        -r ${fasta} \
        -mq 27 \
        -t ${task.cpus} \
-       ${filter}
+       ${filter[0]}
+    """
+}
+
+/*
+* STEP 8 - utrrates
+*/
+process utrrates {
+
+    tag { name }
+
+    input:
+    set val(name), file(filter), file(snp) from slamdunkForUtrRatesChannel
+    each file(fasta) from fastaUtrRatesChannel
+    each file(bed) from utrratesChannel
+
+    output:
+    set val(name), file("utrrates/*csv") into alleyoopUtrRatesOut
+
+    script:
+    """
+    alleyoop utrrates -o utrrates \
+       -r ${fasta} \
+       -mq 27 \
+       -b ${bed} \
+       -l ${params.readLength} \
+       -t ${task.cpus} \
+       ${filter[0]}
     """
 }
 
