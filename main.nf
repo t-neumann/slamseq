@@ -501,12 +501,17 @@ process tcperutrpos {
     """
 }
 
+slamdunkCountAlleyoop
+   .collect()
+   .into{ testchannel2 }
+
 slamdunkFilterSummary
    .collect()
-   .join(slamdunkCountAlleyoop.collect())
    .into { testchannel ; testchannel1}
 
 testchannel1.subscribe{println it}
+
+testchannel2.subscribe{println it}
 
 /*
 * STEP 11 - Summary
@@ -517,14 +522,13 @@ process summary {
 
     input:
     file("filter") from testchannel
-    file("count") from slamdunkCountAlleyoop.collect()
 
     output:
     file("summary*.txt") into summaryQC
 
     script:
     """
-    alleyoop summary -o summary.txt -t ./count ./filter/*bam
+    alleyoop summary -o summary.txt ./filter/*bam
     """
 }
 
