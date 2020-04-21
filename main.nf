@@ -501,17 +501,18 @@ process tcperutrpos {
     """
 }
 
+slamdunkFilterSummary
+   .flatten()
+   .filter( ~/.*bam$/ )
+   .collect()
+   .set { slamdunkFilterSummaryCollected }
+
 slamdunkCountAlleyoop
    .collect()
-   .into{ testchannel2 }
-
-slamdunkFilterSummary
+   .flatten()
+   .filter( ~/.*tsv$/ )
    .collect()
-   .into { testchannel ; testchannel1}
-
-testchannel1.subscribe{println it}
-
-testchannel2.subscribe{println it}
+   .set{ slamdunkCountAlleyoopCollected }
 
 /*
 * STEP 11 - Summary
@@ -521,14 +522,15 @@ process summary {
     publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
 
     input:
-    file("filter") from testchannel
+    file("filter/*") from slamdunkFilterSummaryCollected
+    file("count/*") from slamdunkCountAlleyoopCollected
 
     output:
     file("summary*.txt") into summaryQC
 
     script:
     """
-    alleyoop summary -o summary.txt ./filter/*bam
+    alleyoop summary -o summary.txt -t ./count ./filter/*bam
     """
 }
 
