@@ -501,6 +501,12 @@ process tcperutrpos {
     """
 }
 
+slamdunkFilterSummary
+   .collect()
+   .into { testchannel ; testchannel1}
+
+testchannel1.subscribe{println it}
+
 /*
 * STEP 11 - Summary
 */
@@ -509,7 +515,7 @@ process summary {
     publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
 
     input:
-    file("filter/*") from slamdunkFilterSummary.collect()
+    file("filter/*") from testchannel
     file("count/*") from slamdunkCountAlleyoop.collect()
 
     output:
