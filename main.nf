@@ -296,7 +296,8 @@ process trim {
 
       output:
       set val(name), file("filter/*bam*") into slamdunkFilter,
-                               slamdunkCount
+                                               slamdunkCount,
+                                               slamdunkFilterSummary
 
       script:
       """
@@ -357,7 +358,8 @@ process count {
     each file(fasta) from fastaCountChannel
 
     output:
-    set val(name), file("count/*tsv") into slamdunkCountOut
+    set val(name), file("count/*tsv") into slamdunkCountOut,
+                                           slamdunkCountAlleyoop
 
     script:
     """
@@ -499,27 +501,27 @@ process tcperutrpos {
     """
 }
 
- /*
-  * STEP 3 - Summary
-  *
-  process summary {
+/*
+* STEP 11 - Summary
+*/
+process summary {
 
-      publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
+    publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
 
-      input:
-      file("filter/*") from slamdunkFilter.collect()
-      file("count/*") from slamdunkCount.collect()
+    input:
+    set val(name), file(filter) from slamdunkFilterSummary.collect()
+    set val(name2), file(count) from slamdunkCountAlleyoop.collect()
 
-      output:
-      file("summary*.txt") into summaryQC
+    output:
+    file("summary*.txt") into summaryQC
 
-      script:
-      """
-      #alleyoop summary -o summary.txt -t ./count ./filter/*bam
-      alleyoop summary -o summary.txt ./filter/*bam
-      """
-  }
+    script:
+    """
+    alleyoop summary -o summary.txt -t ./count *bam
+    """
+}
 
+/*
  slamdunkStats
      .flatten()
      .filter( ~/.*csv|.*summary.txt/ )
