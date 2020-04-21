@@ -80,7 +80,8 @@ Channel
     .fromPath( fasta )
     .into { fastaMapChannel ;
             fastaSnpChannel ;
-            fastaCountChannel }
+            fastaCountChannel ;
+            fastaRatesChannel }
 
 // Configurable reference genomes
 
@@ -328,9 +329,7 @@ process trim {
  slamdunkCount
      .join(slamdunkSnp)
      .into{ slamdunkResultsChannel ;
-            slamdunkResultsChannel1 }
-
-slamdunkResultsChannel1.subscribe{ println it}
+            slamdunkForRatesChannel }
 
 /*
 * STEP 5 - Count
@@ -364,7 +363,7 @@ process count {
 /*
 * STEP 6 - Collapse
 */
-process count {
+process collapse {
 
     publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
 
@@ -381,6 +380,30 @@ process count {
     alleyoop collapse -o collapse \
        -t ${task.cpus} \
        ${count}
+    """
+}
+
+/*
+* STEP 7 - rates
+*/
+process rates {
+
+    tag { name }
+
+    input:
+    set val(name), file(filter), file(snp) from slamdunkForRatesChannel
+    each file(fasta) from fastaRatesChannel
+
+    output:
+    set val(name), file("rates/*csv") into slamdunkCollapseOut
+
+    script:
+    """
+    alleyoop rates -o rates \
+       -r ${fasta} \
+       -mq 27 \
+       -t ${task.cpus} \
+       ${filter}
     """
 }
 
