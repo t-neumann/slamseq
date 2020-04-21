@@ -296,8 +296,8 @@ process trim {
 
       output:
       set val(name), file("filter/*bam*") into slamdunkFilter,
-                                               slamdunkCount
-      file("filter/*") into slamdunkFilterSummary
+                                               slamdunkCount,
+                                               slamdunkFilterSummary
 
       script:
       """
@@ -358,8 +358,8 @@ process count {
     each file(fasta) from fastaCountChannel
 
     output:
-    set val(name), file("count/*tsv") into slamdunkCountOut
-    file("count/*") into slamdunkCountAlleyoop
+    set val(name), file("count/*tsv") into slamdunkCountOut,
+                                           slamdunkCountAlleyoop
 
     script:
     """
@@ -503,6 +503,7 @@ process tcperutrpos {
 
 slamdunkFilterSummary
    .collect()
+   .join(slamdunkCountAlleyoop.collect())
    .into { testchannel ; testchannel1}
 
 testchannel1.subscribe{println it}
@@ -515,8 +516,8 @@ process summary {
     publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
 
     input:
-    file("filter/*") from testchannel
-    file("count/*") from slamdunkCountAlleyoop.collect()
+    file("filter") from testchannel
+    file("count") from slamdunkCountAlleyoop.collect()
 
     output:
     file("summary*.txt") into summaryQC
@@ -534,7 +535,7 @@ process summary {
      .set { alleyoopQC }
 
 /*
- * STEP 4 - MultiQC
+ * STEP 12 - MultiQC
  *
 process multiqc {
 
