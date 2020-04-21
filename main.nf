@@ -83,7 +83,8 @@ Channel
             fastaCountChannel ;
             fastaRatesChannel ;
             fastaUtrRatesChannel ;
-            fastaReadPosChannel }
+            fastaReadPosChannel ;
+            fastaUtrPosChannel }
 
 // Configurable reference genomes
 
@@ -104,7 +105,8 @@ if (!params.bed) {
         output:
         file "*.bed" into utrFilterChannel,
                           utrCountChannel,
-                          utrratesChannel
+                          utrratesChannel,
+                          utrposChannel
 
         script:
         """
@@ -115,7 +117,10 @@ if (!params.bed) {
   Channel
         .fromPath(params.bed, checkIfExists: true)
         .ifEmpty { exit 1, "BED 3' UTR annotation file not found: ${params.bed}" }
-        .into { utrFilterChannel ; utrCountChannel ; utrratesChannel}
+        .into { utrFilterChannel ;
+                utrCountChannel ;
+                utrratesChannel ;
+                utrposChannel }
 }
 
 // Read length must be supplied
@@ -334,7 +339,8 @@ process trim {
      .into{ slamdunkResultsChannel ;
             slamdunkForRatesChannel ;
             slamdunkForUtrRatesChannel ;
-            slamdunkForTcPerReadPosChannel }
+            slamdunkForTcPerReadPosChannel ;
+            slamdunkForTcPerUtrPosChannel }
 
 /*
 * STEP 5 - Count
@@ -457,6 +463,34 @@ process tcperreadpos {
     """
     alleyoop tcperreadpos -o tcperreadpos \
        -r ${fasta} \
+       -s . \
+       -mq 27 \
+       -l ${params.readLength} \
+       -t ${task.cpus} \
+       ${filter[0]}
+    """
+}
+
+/*
+* STEP 10 - tcperutrpos
+*/
+process tcperutrpos {
+
+    tag { name }
+
+    input:
+    set val(name), file(filter), file(snp) from slamdunkForTcPerUtrPosChannel
+    each file(fasta) from fastaUtrPosChannel
+    each file(bed) from utrposChannel
+
+    output:
+    set val(name), file("tcperutrpos/*csv") into alleyoopTcPerUtrPosOut
+
+    script:
+    """
+    alleyoop tcperutrpos -o tcperutrpos \
+       -r ${fasta} \
+       -b ${bed} \
        -s . \
        -mq 27 \
        -l ${params.readLength} \
