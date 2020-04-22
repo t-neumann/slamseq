@@ -7,3 +7,6 @@ dependencies:
   - trim-galore=0.6.5
   - multiqc=1.8
   - slamdunk=0.4.3
+  - r-gridextra=2.3
+  - r-ggrepel=0.8.2
+  - bioconductor-deseq2=1.22.1
