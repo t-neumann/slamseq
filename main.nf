@@ -408,7 +408,7 @@ process rates {
     each file(fasta) from fastaRatesChannel
 
     output:
-    set val(name), file("rates/*csv") into alleyoopRatesOut
+    file("rates/*csv") into alleyoopRatesOut
 
     script:
     """
@@ -433,7 +433,7 @@ process utrrates {
     each file(bed) from utrratesChannel
 
     output:
-    set val(name), file("utrrates/*csv") into alleyoopUtrRatesOut
+    file("utrrates/*csv") into alleyoopUtrRatesOut
 
     script:
     """
@@ -459,7 +459,7 @@ process tcperreadpos {
     each file(fasta) from fastaReadPosChannel
 
     output:
-    set val(name), file("tcperreadpos/*csv") into alleyoopTcPerReadPosOut
+    file("tcperreadpos/*csv") into alleyoopTcPerReadPosOut
 
     script:
     """
@@ -486,7 +486,7 @@ process tcperutrpos {
     each file(bed) from utrposChannel
 
     output:
-    set val(name), file("tcperutrpos/*csv") into alleyoopTcPerUtrPosOut
+    file("tcperutrpos/*csv") into alleyoopTcPerUtrPosOut
 
     script:
     """
@@ -535,14 +535,8 @@ process summary {
 }
 
 /*
- slamdunkStats
-     .flatten()
-     .filter( ~/.*csv|.*summary.txt/ )
-     .set { alleyoopQC }
-
-/*
  * STEP 12 - MultiQC
- *
+ */
 process multiqc {
 
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
@@ -550,8 +544,11 @@ process multiqc {
     input:
     file multiqc_config from ch_multiqc_config
 
-    file("alleyoop/*") from alleyoopQC.collect().ifEmpty([])
-    file("summary*.txt") from summaryQC.collect().ifEmpty([])
+    file("rates/*csv") from alleyoopRatesOut.collect().ifEmpty([])
+    file("utrrates/*csv") from alleyoopUtrRatesOut.collect().ifEmpty([])
+    file("tcperreadpos/*csv") from alleyoopTcPerReadPosOut.collect().ifEmpty([])
+    file("tcperutrpos/*csv") from alleyoopTcPerUtrPosOut.collect().ifEmpty([])
+    file("summary*.txt") from summaryQC
     file ("TrimGalore/*") from trimgaloreQC.collect().ifEmpty([])
     file ("TrimGalore/*") from trimgaloreFastQC.collect().ifEmpty([])
     file ('software_versions/*') from software_versions_yaml
@@ -569,12 +566,9 @@ process multiqc {
     multiqc -m fastqc -m cutadapt -m slamdunk -f $rtitle $rfilename --config $multiqc_config .
     """
 }
-*/
-
-
 
 /*
- * STEP 3 - Output Description HTML
+ * STEP n - Output Description HTML
  */
 process output_documentation {
     publishDir "${params.outdir}/Documentation", mode: 'copy'
@@ -590,8 +584,6 @@ process output_documentation {
     markdown_to_html.r $output_docs results_description.html
     """
 }
-
-
 
 /*
  * Completion e-mail notification
