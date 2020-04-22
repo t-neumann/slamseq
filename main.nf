@@ -397,6 +397,8 @@ process collapse {
     alleyoop collapse -o collapse \
        -t ${task.cpus} \
        ${count}
+
+    sed -i "1i# name:${name}" collapse/*csv
     """
 }
 
@@ -540,28 +542,14 @@ process summary {
 
 conditionDeconvolution
     .map{it ->
-        return tuple(it.name, it)
+        return tuple(it.name, it.celltype)
     }
-
-//conditionDeconvolution
-//    .map{it ->
-//        return tuple(it.name, it)
-//    }
-//    .join(slamdunkCollapseOut)
-//    .map{it ->
-//        return tuple(it[1].celltype, it)
-//    }
-//    .groupTuple()
-//    .subscribe{ println it }
-//    .set{ deseq2Input }
-
-//contrastList = "contrastList.txt"
-//fileHandler = new File(contrastList)
-//fileHandler.newWriter().withWriter { file ->
-//    file << "contrast_name\tcontrol\ttreatment\tcounts_total\tcounts_denovo\n"
-//    file << "test_1\tGSM3031424,GSM3031425,GSM3031426\tGSM3031427,GSM3031428,GSM3031429\t" + "$workflow.projectDir" + "/tests/dataset01/input/total.tsv\t" + "$workflow.projectDir" + "/tests/dataset01/input/denovo.tsv\n"
-//    file << "test_2\tGSM3031424,GSM3031425,GSM3031426\tGSM3031430,GSM3031431,GSM3031432\t" + "$workflow.projectDir" + "/tests/dataset01/input/total.tsv\t" + "$workflow.projectDir" + "/tests/dataset01/input/denovo.tsv\n"
-//}
+    .join(slamdunkCollapseOut)
+    .map{it ->
+        return tuple(it[1],it[2])
+    }
+    .groupTuple()
+    .set{ deseq2FileChannel }
 
 /*
  * STEP 12 - DESeq2
@@ -570,9 +558,10 @@ process deseq2 {
 
     input:
     file (conditions) from deseq2ConditionChannel.collect()
+    set val(celltype), file("counts/*") from deseq2FileChannel
 
     output:
-    file "dummy" into deseq2out
+    file("dummy") into deseq2out
 
     script:
 
