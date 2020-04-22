@@ -153,7 +153,7 @@ Channel
    .map { row -> if (row.name == null || row.name == ''){ row.name = file(row.reads).simpleName}; row }
    .map { row -> if (row.type == null || row.type == ''){ row.type = "pulse"}; row }
    .map { row -> if (row.time == null || row.time == ''){ row.time = "0"}; row }
-   .set { rawFiles }
+   .into { rawFiles ; conditionDeconvolution }
 
 
 // Header log info
@@ -534,8 +534,41 @@ process summary {
     """
 }
 
+
+
 /*
- * STEP 12 - MultiQC
+ * STEP 12 - DESeq2
+ *
+process deseq2 {
+
+    input:
+    file multiqc_config from ch_multiqc_config
+
+    file("rates/*") from alleyoopRatesOut.collect().ifEmpty([])
+    file("utrrates/*") from alleyoopUtrRatesOut.collect().ifEmpty([])
+    file("tcperreadpos/*") from alleyoopTcPerReadPosOut.collect().ifEmpty([])
+    file("tcperutrpos/*") from alleyoopTcPerUtrPosOut.collect().ifEmpty([])
+    file(summary) from summaryQC
+    file ("TrimGalore/*") from trimgaloreQC.collect().ifEmpty([])
+    file ("TrimGalore/*") from trimgaloreFastQC.collect().ifEmpty([])
+    file ('software_versions/*') from software_versions_yaml
+    file workflow_summary from create_workflow_summary(summary)
+
+    output:
+    file "dummy" into deseq2out
+
+    script:
+
+    """
+    touch dummy
+    """
+}
+*/
+conditionDeconvolution
+   .subscribe{ println it}
+
+/*
+ * STEP 13 - MultiQC
  */
 process multiqc {
 
