@@ -544,11 +544,11 @@ process multiqc {
     input:
     file multiqc_config from ch_multiqc_config
 
-    file("rates/*csv") from alleyoopRatesOut.collect().ifEmpty([])
-    file("utrrates/*csv") from alleyoopUtrRatesOut.collect().ifEmpty([])
-    file("tcperreadpos/*csv") from alleyoopTcPerReadPosOut.collect().ifEmpty([])
-    file("tcperutrpos/*csv") from alleyoopTcPerUtrPosOut.collect().ifEmpty([])
-    file("summary*.txt") from summaryQC
+    file("rates/*") from alleyoopRatesOut.collect().ifEmpty([])
+    file("utrrates/*") from alleyoopUtrRatesOut.collect().ifEmpty([])
+    file("tcperreadpos/*") from alleyoopTcPerReadPosOut.collect().ifEmpty([])
+    file("tcperutrpos/*") from alleyoopTcPerUtrPosOut.collect().ifEmpty([])
+    file(summary) from summaryQC
     file ("TrimGalore/*") from trimgaloreQC.collect().ifEmpty([])
     file ("TrimGalore/*") from trimgaloreFastQC.collect().ifEmpty([])
     file ('software_versions/*') from software_versions_yaml
