@@ -155,6 +155,10 @@ Channel
    .map { row -> if (row.time == null || row.time == ''){ row.time = "0"}; row }
    .into { rawFiles ; conditionDeconvolution }
 
+Channel
+   .fromPath( params.sampleList )
+   .set { deseq2ConditionChannel }
+
 
 // Header log info
 log.info """=======================================================
@@ -534,25 +538,38 @@ process summary {
     """
 }
 
+conditionDeconvolution
+    .map{it ->
+        return tuple(it.name, it)
+    }
 
+//conditionDeconvolution
+//    .map{it ->
+//        return tuple(it.name, it)
+//    }
+//    .join(slamdunkCollapseOut)
+//    .map{it ->
+//        return tuple(it[1].celltype, it)
+//    }
+//    .groupTuple()
+//    .subscribe{ println it }
+//    .set{ deseq2Input }
+
+//contrastList = "contrastList.txt"
+//fileHandler = new File(contrastList)
+//fileHandler.newWriter().withWriter { file ->
+//    file << "contrast_name\tcontrol\ttreatment\tcounts_total\tcounts_denovo\n"
+//    file << "test_1\tGSM3031424,GSM3031425,GSM3031426\tGSM3031427,GSM3031428,GSM3031429\t" + "$workflow.projectDir" + "/tests/dataset01/input/total.tsv\t" + "$workflow.projectDir" + "/tests/dataset01/input/denovo.tsv\n"
+//    file << "test_2\tGSM3031424,GSM3031425,GSM3031426\tGSM3031430,GSM3031431,GSM3031432\t" + "$workflow.projectDir" + "/tests/dataset01/input/total.tsv\t" + "$workflow.projectDir" + "/tests/dataset01/input/denovo.tsv\n"
+//}
 
 /*
  * STEP 12 - DESeq2
- *
+ */
 process deseq2 {
 
     input:
-    file multiqc_config from ch_multiqc_config
-
-    file("rates/*") from alleyoopRatesOut.collect().ifEmpty([])
-    file("utrrates/*") from alleyoopUtrRatesOut.collect().ifEmpty([])
-    file("tcperreadpos/*") from alleyoopTcPerReadPosOut.collect().ifEmpty([])
-    file("tcperutrpos/*") from alleyoopTcPerUtrPosOut.collect().ifEmpty([])
-    file(summary) from summaryQC
-    file ("TrimGalore/*") from trimgaloreQC.collect().ifEmpty([])
-    file ("TrimGalore/*") from trimgaloreFastQC.collect().ifEmpty([])
-    file ('software_versions/*') from software_versions_yaml
-    file workflow_summary from create_workflow_summary(summary)
+    file (conditions) from deseq2ConditionChannel.collect()
 
     output:
     file "dummy" into deseq2out
@@ -563,9 +580,6 @@ process deseq2 {
     touch dummy
     """
 }
-*/
-conditionDeconvolution
-   .subscribe{ println it}
 
 /*
  * STEP 13 - MultiQC
