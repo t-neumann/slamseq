@@ -556,17 +556,19 @@ conditionDeconvolution
  */
 process deseq2 {
 
+    publishDir path: "${params.outdir}/deseq2", mode: 'copy', overwrite: 'true'
+
     input:
     file (conditions) from deseq2ConditionChannel.collect()
     set val(celltype), file("counts/*") from deseq2FileChannel
 
     output:
-    file("dummy") into deseq2out
+    file("${celltype}") into deseq2out
 
     script:
 
     """
-    touch dummy
+    deseq2_slamdunk.r -t ${celltype} -d ${conditions} -c counts -O ${celltype}
     """
 }
 

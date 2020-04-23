@@ -174,7 +174,7 @@ MAPlot <- function(export.deseq2, case, control) {
 
   # Generate basic MA-like plot with density coloring.
 
-  p <- ggplot(df, aes(x = x, y = y, label = symbol)) +
+  p <- ggplot(df, aes(x = x, y = y, label = gene_name)) +
     theme_classic() +
     scale_color_identity() +
     labs(x = "average expression total mRNA (RPM)", y = "log2FC")
@@ -204,7 +204,7 @@ MAPlot <- function(export.deseq2, case, control) {
 
   #  Generate basic MA-like plot with density coloring.
 
-  p <- ggplot(df, aes(x = x, y = y, label = symbol)) +
+  p <- ggplot(df, aes(x = x, y = y, label = gene_name)) +
     theme_classic() +
     scale_color_identity() +
     labs(x = "average expression total mRNA (RPM)", y = "log2FC") +
