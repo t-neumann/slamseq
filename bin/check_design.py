@@ -58,7 +58,7 @@ ERROR_STR = 'ERROR: Please check design file'
 HEADER = ['celltype', 'condition', 'control', 'reads']
 EXTHEADER = ['celltype', 'condition', 'control', 'reads','name','type','time']
 
-conditions = dict()
+fout = open(args.DESIGN_FILE_OUT,'w')
 
 with open(args.DESIGN_FILE_IN, 'r') as f:
     header = next(f)
@@ -69,9 +69,11 @@ with open(args.DESIGN_FILE_IN, 'r') as f:
         print("{} header: {} != {}".format(ERROR_STR,','.join(header),','.join(HEADER)))
         sys.exit(1)
 
+    fout.write("\t".join(EXTHEADER))
+
     regularDesign = False
 
-    if len(head) == 7:
+    if len(header) == 7:
         regularDesign = True
 
     for line in f:
@@ -81,7 +83,7 @@ with open(args.DESIGN_FILE_IN, 'r') as f:
         control = fields[2]
         reads = fields[3]
 
-        if regularDesign:
+        if regularDesign and len(fields) == 7:
             name = fields[4]
             type = fields[5]
             time = fields[6]
@@ -97,4 +99,23 @@ with open(args.DESIGN_FILE_IN, 'r') as f:
         if time == "":
             time = "0"
 
-        print("\t".join([celltype, condition, control, reads, name, type, time]))
+        if type != "pulse" and type != "chase":
+            print("{} type needs to be either 'pulse' or 'chase'!\nLine: '{}'".format(ERROR_STR,line.strip()))
+            sys.exit(1)
+
+        if control != "0" and control != "1":
+            print("{} control needs to be either '0' or '1'!\nLine: '{}'".format(ERROR_STR,line.strip()))
+            sys.exit(1)
+
+        ## CHECK REPLICATE COLUMN IS INTEGER
+        if not time.isdigit():
+            print("{}: Time needs to be an integer!\nLine: '{}'".format(ERROR_STR,line.strip()))
+            sys.exit(1)
+
+        if reads[-9:] != '.fastq.gz' and reads[-6:] != '.fq.gz':
+            print("{}: Reads FastQ file has incorrect extension (has to be '.fastq.gz' or 'fq.gz') - {}\nLine: '{}'".format(ERROR_STR,fastq,line.strip()))
+            sys.exit(1)
+
+        fout.write("\t".join([celltype, condition, control, reads, name, type, time]))
+
+fout.close()
