@@ -263,8 +263,6 @@ process trim {
  */
  process map {
 
-     publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
-
      tag { parameters.name }
 
      input:
@@ -290,7 +288,7 @@ process trim {
   */
   process filter {
 
-      publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
+      publishDir path: "${params.outdir}/slamdunk/bam", mode: 'copy', overwrite: 'true', pattern: "*.bam*"
 
       tag { name }
 
@@ -317,7 +315,7 @@ process trim {
  */
  process snp {
 
-     publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
+     publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy', overwrite: 'true', pattern: "*.vcf"
 
      tag { name }
 
@@ -352,7 +350,7 @@ process trim {
 */
 process count {
 
-    publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
+    publishDir path: "${params.outdir}/slamdunk/count/utrs", mode: 'copy', overwrite: 'true', pattern: "*.tsv"
 
     tag { name }
 
@@ -382,7 +380,7 @@ process count {
 */
 process collapse {
 
-    publishDir path: "${params.outdir}", mode: 'copy', overwrite: 'true'
+    publishDir path: "${params.outdir}/slamdunk/count/genes", mode: 'copy', overwrite: 'true', pattern: "*.csv"
 
     tag { name }
 
@@ -524,8 +522,6 @@ slamdunkCountAlleyoop
 * STEP 11 - Summary
 */
 process summary {
-
-    publishDir path: "${params.outdir}/slamdunk", mode: 'copy', overwrite: 'true'
 
     input:
     file("filter/*") from slamdunkFilterSummaryCollected
