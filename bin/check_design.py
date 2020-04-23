@@ -69,7 +69,7 @@ with open(args.DESIGN_FILE_IN, 'r') as f:
         print("{} header: {} != {}".format(ERROR_STR,','.join(header),','.join(HEADER)))
         sys.exit(1)
 
-    fout.write("\t".join(EXTHEADER))
+    fout.write("\t".join(EXTHEADER) + "\n")
 
     regularDesign = False
 
@@ -116,6 +116,6 @@ with open(args.DESIGN_FILE_IN, 'r') as f:
             print("{}: Reads FastQ file has incorrect extension (has to be '.fastq.gz' or 'fq.gz') - {}\nLine: '{}'".format(ERROR_STR,fastq,line.strip()))
             sys.exit(1)
 
-        fout.write("\t".join([celltype, condition, control, reads, name, type, time]))
+        fout.write("\t".join([celltype, condition, control, reads, name, type, time]) + "\n")
 
 fout.close()
