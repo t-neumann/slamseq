@@ -148,8 +148,9 @@ ch_multiqc_config = Channel.fromPath(params.multiqc_config)
 ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
 Channel
-   .fromPath( params.sampleList )
-   .set( checkChannel )
+   .fromPath( params.sampleList, checkIfExists: true )
+   .ifEmpty { exit 1, "sampleList file not found: ${params.sampleList}" }
+   .set{ checkChannel }
 
 // Header log info
 log.info """=======================================================
