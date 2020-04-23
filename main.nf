@@ -288,6 +288,10 @@ process trim {
   */
   process filter {
 
+    publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy',
+               overwrite: 'true', pattern: "filter/*bam*",
+               saveAs: { it.endsWith(".bam") ? (it.endsWith(".bai") ? file(it).getName() : it ): it  }
+
       publishDir path: "${params.outdir}/slamdunk/bam", mode: 'copy', overwrite: 'true', pattern: "*.bam*"
 
       tag { name }
@@ -315,7 +319,9 @@ process trim {
  */
  process snp {
 
-     publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy', overwrite: 'true', pattern: "*.vcf"
+   publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy',
+              overwrite: 'true', pattern: "snp/*vcf",
+              saveAs: { it.endsWith(".vcf") ? file(it).getName() : it  }
 
      tag { name }
 
@@ -350,7 +356,9 @@ process trim {
 */
 process count {
 
-    publishDir path: "${params.outdir}/slamdunk/count/utrs", mode: 'copy', overwrite: 'true', pattern: "*.tsv"
+  publishDir path: "${params.outdir}/slamdunk/count/utrs", mode: 'copy',
+             overwrite: 'true', pattern: "count/*.tsv",
+             saveAs: { it.endsWith(".tsv") ? file(it).getName() : it  }
 
     tag { name }
 
@@ -380,7 +388,9 @@ process count {
 */
 process collapse {
 
-    publishDir path: "${params.outdir}/slamdunk/count/genes", mode: 'copy', overwrite: 'true', pattern: "*.csv"
+    publishDir path: "${params.outdir}/slamdunk/count/genes", mode: 'copy',
+               overwrite: 'true', pattern: "collapse/*.csv",
+               saveAs: { it.endsWith(".csv") ? file(it).getName() : it  }
 
     tag { name }
 
