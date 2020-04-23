@@ -12,7 +12,7 @@ library(getopt)
 
 spec = matrix(c(
   'help'      , 'h', 0, "logical","print the usage of the command",
-  'celltype', 'c', 2, "character", "celltype",
+  'celltype', 't', 2, "character", "celltype",
   'design', "d", 2,"character","Design file",
   'countFolder', "c", 2,"character","Count file folder",
   'output', "O", 2,"character","Output folder"
@@ -137,7 +137,7 @@ getContrast <- function(counts, dds, case, control) {
 
   avg.RPM <- data.frame(gene_name = as.character(counts$gene_name),
                         avg.RPM.ctrl = counts %>%
-                          dplyr::select(ctrl) %>%
+                          dplyr::select(all_of(ctrl)) %>%
                           rowMeans
   )
 
@@ -274,12 +274,12 @@ design = design %>%
 
 countFiles = list.files(opt$countFolder, pattern = ".csv")
 
-counts = parseSample(countFiles[1])
+counts = parseSample(file.path(opt$countFolder,countFiles[1]))
 
 if(length(countFiles) > 1) {
 
   for (i in 2:length(countFiles)) {
-    counts = counts %>% inner_join(parseSample(countFiles[i]), by = "gene_name")
+    counts = counts %>% inner_join(parseSample(file.path(opt$countFolder,countFiles[i])), by = "gene_name")
   }
 }
 
@@ -317,7 +317,7 @@ for (case in cases) {
   # Extract contrasts
   ######################
 
-  export.deseq2 <- getContrast(counts, dds, case, control)
+  export.deseq2 <- getContrast(counts, dds, case, ctrl)
 
   write_tsv(export.deseq2,
             file.path(opt$output,case,"DESeq2.txt")
@@ -328,7 +328,7 @@ for (case in cases) {
   ######################
 
   pdf(file.path(opt$output,case,"MAPlot.pdf"))
-  MAPlot(export.deseq2, case, control)
+  MAPlot(export.deseq2, case, ctrl)
   dev.off()
 
 }
