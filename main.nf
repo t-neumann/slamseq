@@ -149,16 +149,7 @@ ch_output_docs = Channel.fromPath("$baseDir/docs/output.md")
 
 Channel
    .fromPath( params.sampleList )
-   .splitCsv( header: true, sep: '\t' )
-   .map { row -> if (row.name == null || row.name == ''){ row.name = file(row.reads).simpleName}; row }
-   .map { row -> if (row.type == null || row.type == ''){ row.type = "pulse"}; row }
-   .map { row -> if (row.time == null || row.time == ''){ row.time = "0"}; row }
-   .into { rawFiles ; conditionDeconvolution }
-
-Channel
-   .fromPath( params.sampleList )
-   .set { deseq2ConditionChannel }
-
+   .set( checkChannel )
 
 // Header log info
 log.info """=======================================================
@@ -234,6 +225,27 @@ process get_software_versions {
     scrape_software_versions.py > software_versions_mqc.yaml
     """
 }
+
+/*
+ * Check design
+ */
+process checkDesign {
+
+    input:
+    file (design) from checkChannel
+
+    output:
+    file ('nfcore_slamseq_design.txt') into deseq2ConditionChannel, splitChannel
+
+    script:
+    """
+    check_design.py ${design} nfcore_slamseq_design.txt
+    """
+}
+
+splitChannel
+   .splitCsv( header: true, sep: '\t' )
+   .into { rawFiles ; conditionDeconvolution }
 
 /*
  * STEP 1 - TrimGalore!
