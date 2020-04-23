@@ -236,7 +236,7 @@ process checkDesign {
     file (design) from checkChannel
 
     output:
-    file ('nfcore_slamseq_design.txt') into deseq2ConditionChannel, splitChannel
+    file "nfcore_slamseq_design.txt" into deseq2ConditionChannel, splitChannel
 
     script:
     """
