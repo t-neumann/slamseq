@@ -23,6 +23,14 @@ parser.add_argument("-i", "--ids", type=str, required=True, dest="idsFile", help
 
 args = parser.parse_args()
 
+readIds = list()
+
+with open(args.idsFile,'r') as f:
+    for line in f:
+        id = line.rstrip()
+        readIds.append(id)
+
 for record in Bio.SeqIO.parse(args.fastqFile, 'fastq'):
     readName = str(record.id)
-    print(record)
+    if readName in readIds:
+        Bio.SeqIO.write(record, sys.stdout, 'fastq')
