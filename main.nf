@@ -21,9 +21,8 @@ def helpMessage() {
     nextflow run nf-core/slamseq --reads '*_R{1,2}.fastq.gz' -profile docker
 
     Mandatory arguments:
-      --sampleList [file]             Text file containing the following unnamed columns:
-                                      path to fastq, sample name, sample type, time point
-                                      (see Slamdunk documentation for details)
+      --input [file]                  Tab-separated file containing information about the samples in the experiment (see docs/usage.md)
+
       -profile [str]                  Configuration profile to use. Can use multiple (comma separated)
                                       Available: conda, docker, singularity, test, awsbatch, <institute> and more
 
@@ -34,8 +33,11 @@ def helpMessage() {
       --fasta [file]                  Path to fasta reference
       --bed [file]                    Path to 3' UTR counting window reference
       --mapping [file]                Path to 3' UTR multimapper recovery reference
+
     Processing parameters
-      --baseQuality [int]             Minimum base quality to filter reads
+      --multimappers [bool]           Activate multimapper retainment strategy
+      --conversions [int]             Minimum number of conversions to count a read as converted read
+      --baseQuality [int]             Minimum base quality to filter conversions
       --readLength [int]              Read length of processed reads
 
     Other options:
@@ -121,6 +123,13 @@ if (!params.bed) {
 // Read length must be supplied
 if ( !params.readLength ) exit 1, "Read length must be supplied."
 
+if ( params.mapping ) {
+  Channel
+        .fromPath(params.mapping, checkIfExists: true)
+        .ifEmpty { exit 1, "Mapping file not found: ${params.mapping}" }
+        .set{ utrFilterChannel }
+}
+
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
 custom_runName = params.name
@@ -147,8 +156,8 @@ ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
  * Create a channel for sample list
  */
  Channel
-    .fromPath( params.sampleList, checkIfExists: true )
-    .ifEmpty { exit 1, "sampleList file not found: ${params.sampleList}" }
+    .fromPath( params.input, checkIfExists: true )
+    .ifEmpty { exit 1, "input file not found: ${params.input}" }
     .set{ checkChannel }
 
 // Header log info
@@ -157,9 +166,12 @@ def summary = [:]
 if (workflow.revision) summary['Pipeline Release'] = workflow.revision
 summary['Run Name']         = custom_runName ?: workflow.runName
 // TODO nf-core: Report custom parameters here
-summary['Reads']            = params.reads
+summary['Input']            = params.input
 summary['Fasta Ref']        = params.fasta
-summary['Data Type']        = params.single_end ? 'Single-End' : 'Paired-End'
+summary['Multimappers']     = params.multimappers
+summary['Conversions']      = params.conversions
+summary['BaseQuality']      = params.baseQuality
+summary['ReadLength']       = params.readLength
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
@@ -321,9 +333,11 @@ process trim {
                                                slamdunkFilterSummary
 
       script:
+      multimappers = params.multimappers ? "-b ${bed}" : ""
+
       """
       slamdunk filter -o filter \
-         -b ${bed} \
+         ${multimappers} \
          -t ${task.cpus} \
          ${map}
       """
