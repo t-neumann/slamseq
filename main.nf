@@ -408,7 +408,8 @@ process trim {
      """
      slamdunk snp -o snp \
         -r ${fasta} \
-        -f 0.2 \
+        -c ${params.min_coverage} \
+        -f ${params.var_fraction} \
         -t ${task.cpus} \
         ${filter[0]}
      """
@@ -446,12 +447,15 @@ process count {
                                            slamdunkCountAlleyoop
 
     script:
+    snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
     """
     slamdunk count -o count \
        -r ${fasta} \
-       -s . \
+       ${snpMode} \
        -b ${bed} \
        -l ${params.readLength} \
+       -c ${params.conversions} \
+       -q ${params.baseQuality} \
        -t ${task.cpus} \
        ${filter[0]}
     """
