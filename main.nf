@@ -21,16 +21,22 @@ def helpMessage() {
     nextflow run nf-core/slamseq --reads '*_R{1,2}.fastq.gz' -profile docker
 
     Mandatory arguments:
-      --reads [file]                Path to input data (must be surrounded with quotes)
-      -profile [str]                Configuration profile to use. Can use multiple (comma separated)
-                                    Available: conda, docker, singularity, test, awsbatch, <institute> and more
+      --sampleList [file]             Text file containing the following unnamed columns:
+                                      path to fastq, sample name, sample type, time point
+                                      (see Slamdunk documentation for details)
+      -profile [str]                  Configuration profile to use. Can use multiple (comma separated)
+                                      Available: conda, docker, singularity, test, awsbatch, <institute> and more
 
     Options:
       --genome [str]                  Name of iGenomes reference
-      --single_end [bool]             Specifies that the input is single-end reads
 
     References                        If not specified in the configuration file or you wish to overwrite any of the references
       --fasta [file]                  Path to fasta reference
+      --bed [file]                    Path to 3' UTR counting window reference
+      --mapping [file]                Path to 3' UTR multimapper recovery reference
+    Processing parameters
+      --baseQuality [int]             Minimum base quality to filter reads
+      --readLength [int]              Read length of processed reads
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -61,16 +67,59 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
     exit 1, "The provided genome '${params.genome}' is not available in the iGenomes file. Currently the available genomes are ${params.genomes.keySet().join(", ")}"
 }
 
-// TODO nf-core: Add any reference files that are needed
 // Configurable reference genomes
 //
-// NOTE - THIS IS NOT USED IN THIS PIPELINE, EXAMPLE ONLY
-// If you want to use the channel below in a process, define the following:
-//   input:
-//   file fasta from ch_fasta
 //
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
-if (params.fasta) { ch_fasta = file(params.fasta, checkIfExists: true) }
+if (params.fasta) {
+  Channel
+      .fromPath( fasta checkIfExists: trues)
+      .into { fastaMapChannel ;
+              fastaSnpChannel ;
+              fastaCountChannel ;
+              fastaRatesChannel ;
+              fastaUtrRatesChannel ;
+              fastaReadPosChannel ;
+              fastaUtrPosChannel }
+}
+
+if (!params.bed) {
+	gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
+
+  Channel
+        .fromPath(gtf, checkIfExists: true)
+        .ifEmpty { exit 1, "GTF annotation file not found: ${gtf}" }
+        .set{ gtfChannel }
+
+  process gtf2bed {
+        tag "$gtf"
+
+        input:
+        file gtf from gtfChannel
+
+        output:
+        file "*.bed" into utrFilterChannel,
+                          utrCountChannel,
+                          utrratesChannel,
+                          utrposChannel
+
+        script:
+        """
+        gtf2bed.py $gtf | sort -k1,1 -k2,2n > ${gtf.baseName}.3utr.bed
+        """
+    }
+} else {
+  Channel
+        .fromPath(params.bed, checkIfExists: true)
+        .ifEmpty { exit 1, "BED 3' UTR annotation file not found: ${params.bed}" }
+        .into { utrFilterChannel ;
+                utrCountChannel ;
+                utrratesChannel ;
+                utrposChannel }
+}
+
+// Read length must be supplied
+if ( !params.readLength ) exit 1, "Read length must be supplied."
 
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
@@ -95,28 +144,12 @@ ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multi
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 
 /*
- * Create a channel for input read files
+ * Create a channel for sample list
  */
-if (params.readPaths) {
-    if (params.single_end) {
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [ file(row[1][0], checkIfExists: true) ] ] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { ch_read_files_fastqc; ch_read_files_trimming }
-    } else {
-        Channel
-            .from(params.readPaths)
-            .map { row -> [ row[0], [ file(row[1][0], checkIfExists: true), file(row[1][1], checkIfExists: true) ] ] }
-            .ifEmpty { exit 1, "params.readPaths was empty - no input files supplied" }
-            .into { ch_read_files_fastqc; ch_read_files_trimming }
-    }
-} else {
-    Channel
-        .fromFilePairs(params.reads, size: params.single_end ? 1 : 2)
-        .ifEmpty { exit 1, "Cannot find any reads matching: ${params.reads}\nNB: Path needs to be enclosed in quotes!\nIf this is single-end data, please specify --single_end on the command line." }
-        .into { ch_read_files_fastqc; ch_read_files_trimming }
-}
+ Channel
+    .fromPath( params.sampleList, checkIfExists: true )
+    .ifEmpty { exit 1, "sampleList file not found: ${params.sampleList}" }
+    .set{ checkChannel }
 
 // Header log info
 log.info nfcoreHeader()
@@ -189,37 +222,378 @@ process get_software_versions {
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
-    fastqc --version > v_fastqc.txt
+    trim_galore --version > v_trimgalore.txt
+    slamdunk --version > v_slamdunk.txt
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
 
 /*
- * STEP 1 - FastQC
+ * Check design
  */
-process fastqc {
-    tag "$name"
-    label 'process_medium'
-    publishDir "${params.outdir}/fastqc", mode: 'copy',
-        saveAs: { filename ->
-                      filename.indexOf(".zip") > 0 ? "zips/$filename" : "$filename"
-                }
+process checkDesign {
 
     input:
-    set val(name), file(reads) from ch_read_files_fastqc
+    file (design) from checkChannel
 
     output:
-    file "*_fastqc.{zip,html}" into ch_fastqc_results
+    file "nfcore_slamseq_design.txt" into deseq2ConditionChannel, splitChannel
 
     script:
     """
-    fastqc --quiet --threads $task.cpus $reads
+    check_design.py ${design} nfcore_slamseq_design.txt
+    """
+}
+
+splitChannel
+   .splitCsv( header: true, sep: '\t' )
+   .into { rawFiles ; conditionDeconvolution }
+
+/*
+ * STEP 1 - TrimGalore!
+ */
+process trim {
+
+     tag { parameters.name }
+
+     input:
+     val(parameters) from rawFiles
+
+     output:
+     set val(parameters), file("TrimGalore/${parameters.name}.fastq.gz") into trimmedFiles
+     file ("TrimGalore/*.txt") into trimgaloreQC
+     file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
+
+     script:
+     """
+     mkdir -p TrimGalore
+     trim_galore ${parameters.reads} --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
+     mv TrimGalore/*.fq.gz TrimGalore/${parameters.name}.fastq.gz
+     """
+}
+
+/*
+ * STEP 2 - Map
+ */
+ process map {
+
+     tag { parameters.name }
+
+     input:
+     set val(parameters), file(fastq) from trimmedFiles
+     each file(fasta) from fastaMapChannel
+
+     output:
+     set val(parameters.name), file("map/*bam") into slamdunkMap
+
+     script:
+     """
+     slamdunk map -r ${fasta} -o map \
+        -5 12 -n 100 -t ${task.cpus} \
+        --sampleName ${parameters.name} \
+        --sampleType ${parameters.type} \
+        --sampleTime ${parameters.time} --skip-sam \
+        ${fastq}
+     """
+ }
+
+ /*
+  * STEP 3 - Filter
+  */
+  process filter {
+
+    publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy',
+               overwrite: 'true', pattern: "filter/*bam*",
+               saveAs: { it.endsWith(".bam") ? (it.endsWith(".bai") ? file(it).getName() : it ): it  }
+
+      publishDir path: "${params.outdir}/slamdunk/bam", mode: 'copy', overwrite: 'true', pattern: "*.bam*"
+
+      tag { name }
+
+      input:
+      set val(name), file(map) from slamdunkMap
+      each file(bed) from utrFilterChannel
+
+      output:
+      set val(name), file("filter/*bam*") into slamdunkFilter,
+                                               slamdunkCount,
+                                               slamdunkFilterSummary
+
+      script:
+      """
+      slamdunk filter -o filter \
+         -b ${bed} \
+         -t ${task.cpus} \
+         ${map}
+      """
+  }
+
+/*
+ * STEP 4 - Snp
+ */
+ process snp {
+
+   publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy',
+              overwrite: 'true', pattern: "snp/*vcf",
+              saveAs: { it.endsWith(".vcf") ? file(it).getName() : it  }
+
+     tag { name }
+
+     input:
+     set val(name), file(filter) from slamdunkFilter
+     each file(fasta) from fastaSnpChannel
+
+     output:
+     set val(name), file("snp/*vcf") into slamdunkSnp
+
+     script:
+     """
+     slamdunk snp -o snp \
+        -r ${fasta} \
+        -f 0.2 \
+        -t ${task.cpus} \
+        ${filter[0]}
+     """
+ }
+
+// Join by column 3 (reads)
+ slamdunkCount
+     .join(slamdunkSnp)
+     .into{ slamdunkResultsChannel ;
+            slamdunkForRatesChannel ;
+            slamdunkForUtrRatesChannel ;
+            slamdunkForTcPerReadPosChannel ;
+            slamdunkForTcPerUtrPosChannel }
+
+/*
+* STEP 5 - Count
+*/
+process count {
+
+  publishDir path: "${params.outdir}/slamdunk/count/utrs", mode: 'copy',
+             overwrite: 'true', pattern: "count/*.tsv",
+             saveAs: { it.endsWith(".tsv") ? file(it).getName() : it  }
+
+    tag { name }
+
+    input:
+    set val(name), file(filter), file(snp) from slamdunkResultsChannel
+    each file(bed) from utrCountChannel
+    each file(fasta) from fastaCountChannel
+
+    output:
+    set val(name), file("count/*tsv") into slamdunkCountOut,
+                                           slamdunkCountAlleyoop
+
+    script:
+    """
+    slamdunk count -o count \
+       -r ${fasta} \
+       -s . \
+       -b ${bed} \
+       -l ${params.readLength} \
+       -t ${task.cpus} \
+       ${filter[0]}
     """
 }
 
 /*
- * STEP 2 - MultiQC
+* STEP 6 - Collapse
+*/
+process collapse {
+
+    publishDir path: "${params.outdir}/slamdunk/count/genes", mode: 'copy',
+               overwrite: 'true', pattern: "collapse/*.csv",
+               saveAs: { it.endsWith(".csv") ? file(it).getName() : it  }
+
+    tag { name }
+
+    input:
+    set val(name), file(count) from slamdunkCountOut
+
+    output:
+    set val(name), file("collapse/*csv") into slamdunkCollapseOut
+
+    script:
+    """
+    alleyoop collapse -o collapse \
+       -t ${task.cpus} \
+       ${count}
+    sed -i "1i# name:${name}" collapse/*csv
+    """
+}
+
+/*
+* STEP 7 - rates
+*/
+process rates {
+
+    tag { name }
+
+    input:
+    set val(name), file(filter), file(snp) from slamdunkForRatesChannel
+    each file(fasta) from fastaRatesChannel
+
+    output:
+    file("rates/*csv") into alleyoopRatesOut
+
+    script:
+    """
+    alleyoop rates -o rates \
+       -r ${fasta} \
+       -mq 27 \
+       -t ${task.cpus} \
+       ${filter[0]}
+    """
+}
+
+/*
+* STEP 8 - utrrates
+*/
+process utrrates {
+
+    tag { name }
+
+    input:
+    set val(name), file(filter), file(snp) from slamdunkForUtrRatesChannel
+    each file(fasta) from fastaUtrRatesChannel
+    each file(bed) from utrratesChannel
+
+    output:
+    file("utrrates/*csv") into alleyoopUtrRatesOut
+
+    script:
+    """
+    alleyoop utrrates -o utrrates \
+       -r ${fasta} \
+       -mq 27 \
+       -b ${bed} \
+       -l ${params.readLength} \
+       -t ${task.cpus} \
+       ${filter[0]}
+    """
+}
+
+/*
+* STEP 9 - tcperreadpos
+*/
+process tcperreadpos {
+
+    tag { name }
+
+    input:
+    set val(name), file(filter), file(snp) from slamdunkForTcPerReadPosChannel
+    each file(fasta) from fastaReadPosChannel
+
+    output:
+    file("tcperreadpos/*csv") into alleyoopTcPerReadPosOut
+
+    script:
+    """
+    alleyoop tcperreadpos -o tcperreadpos \
+       -r ${fasta} \
+       -s . \
+       -mq 27 \
+       -l ${params.readLength} \
+       -t ${task.cpus} \
+       ${filter[0]}
+    """
+}
+
+/*
+* STEP 10 - tcperutrpos
+*/
+process tcperutrpos {
+
+    tag { name }
+
+    input:
+    set val(name), file(filter), file(snp) from slamdunkForTcPerUtrPosChannel
+    each file(fasta) from fastaUtrPosChannel
+    each file(bed) from utrposChannel
+
+    output:
+    file("tcperutrpos/*csv") into alleyoopTcPerUtrPosOut
+
+    script:
+    """
+    alleyoop tcperutrpos -o tcperutrpos \
+       -r ${fasta} \
+       -b ${bed} \
+       -s . \
+       -mq 27 \
+       -l ${params.readLength} \
+       -t ${task.cpus} \
+       ${filter[0]}
+    """
+}
+
+slamdunkFilterSummary
+   .flatten()
+   .filter( ~/.*bam$/ )
+   .collect()
+   .set { slamdunkFilterSummaryCollected }
+
+slamdunkCountAlleyoop
+   .collect()
+   .flatten()
+   .filter( ~/.*tsv$/ )
+   .collect()
+   .set{ slamdunkCountAlleyoopCollected }
+
+/*
+* STEP 11 - Summary
+*/
+process summary {
+
+    input:
+    file("filter/*") from slamdunkFilterSummaryCollected
+    file("count/*") from slamdunkCountAlleyoopCollected
+
+    output:
+    file("summary*.txt") into summaryQC
+
+    script:
+    """
+    alleyoop summary -o summary.txt -t ./count ./filter/*bam
+    """
+}
+
+conditionDeconvolution
+    .map{it ->
+        return tuple(it.name, it.celltype)
+    }
+    .join(slamdunkCollapseOut)
+    .map{it ->
+        return tuple(it[1],it[2])
+    }
+    .groupTuple()
+    .set{ deseq2FileChannel }
+
+/*
+ * STEP 12 - DESeq2
+ */
+process deseq2 {
+
+    publishDir path: "${params.outdir}/deseq2", mode: 'copy', overwrite: 'true'
+
+    input:
+    file (conditions) from deseq2ConditionChannel.collect()
+    set val(celltype), file("counts/*") from deseq2FileChannel
+
+    output:
+    file("${celltype}") into deseq2out
+
+    script:
+
+    """
+    deseq2_slamdunk.r -t ${celltype} -d ${conditions} -c counts -O ${celltype}
+    """
+}
+
+/*
+ * STEP 13 - MultiQC
  */
 process multiqc {
     publishDir "${params.outdir}/MultiQC", mode: 'copy'
@@ -228,7 +602,13 @@ process multiqc {
     file (multiqc_config) from ch_multiqc_config
     file (mqc_custom_config) from ch_multiqc_custom_config.collect().ifEmpty([])
     // TODO nf-core: Add in log files from your new processes for MultiQC to find!
-    file ('fastqc/*') from ch_fastqc_results.collect().ifEmpty([])
+    file("rates/*") from alleyoopRatesOut.collect().ifEmpty([])
+    file("utrrates/*") from alleyoopUtrRatesOut.collect().ifEmpty([])
+    file("tcperreadpos/*") from alleyoopTcPerReadPosOut.collect().ifEmpty([])
+    file("tcperutrpos/*") from alleyoopTcPerUtrPosOut.collect().ifEmpty([])
+    file(summary) from summaryQC
+    file ("TrimGalore/*") from trimgaloreQC.collect().ifEmpty([])
+    file ("TrimGalore/*") from trimgaloreFastQC.collect().ifEmpty([])
     file ('software_versions/*') from ch_software_versions_yaml.collect()
     file workflow_summary from ch_workflow_summary.collectFile(name: "workflow_summary_mqc.yaml")
 
@@ -243,7 +623,7 @@ process multiqc {
     custom_config_file = params.multiqc_config ? "--config $mqc_custom_config" : ''
     // TODO nf-core: Specify which MultiQC modules to use with -m for a faster run time
     """
-    multiqc -f $rtitle $rfilename $custom_config_file .
+    multiqc -m fastqc -m cutadapt -m slamdunk -f $rtitle $rfilename $custom_config_file .
     """
 }
 
