@@ -383,7 +383,7 @@ process trim {
      each file(fasta) from fastaSnpChannel
 
      output:
-     set val(name), file("snp/*vcf[.gz]") into slamdunkSnp
+     set val(name), file("snp/*vcf") into slamdunkSnp
 
      when:
      !params.vcf
@@ -407,10 +407,7 @@ vcfComb = slamdunkSnp.mix(vcfCombineChannel)
             slamdunkForRatesChannel ;
             slamdunkForUtrRatesChannel ;
             slamdunkForTcPerReadPosChannel ;
-            slamdunkForTcPerUtrPosChannel ;
-            plotChannel}
-
-plotChannel.subscribe{ println it}
+            slamdunkForTcPerUtrPosChannel }
 
 /*
 * STEP 5 - Count
