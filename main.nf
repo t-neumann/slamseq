@@ -36,7 +36,13 @@ def helpMessage() {
       --vcf [file]                    Path to VCF file for genomic SNPs to mask T>C conversion (optional)
 
     Processing parameters
+      --trim5 [int]                   Number of basepairs to trim from 5' end of the read
+      --polyA [int]                   Maximum number of As at the 3' end of a read.
       --multimappers [bool]           Activate multimapper retainment strategy
+      --quantseq [bool]               Deactivate nucleotide-conversion aware scoring
+      --endtoend [bool]               Use a end to end alignment algorithm for mapping.
+      --min-coverage [int]            Minimimum coverage to call a SNP.
+      --var-fraction [float]          Minimimum variant fraction to call a SNP.
       --conversions [int]             Minimum number of conversions to count a read as converted read
       --baseQuality [int]             Minimum base quality to filter conversions
       --readLength [int]              Read length of processed reads
@@ -182,6 +188,10 @@ summary['Input']            = params.input
 summary['Fasta Ref']        = params.fasta
 summary['Vcf']              = params.vcf
 summary['Multimappers']     = params.multimappers
+summary['Quantseq']         = params.quantseq
+summary['Endtoend']         = params.endtoend
+summary['Minimum coverage'] = params.min-coverage
+summary['Variant fraction'] = params.var-fraction
 summary['Conversions']      = params.conversions
 summary['BaseQuality']      = params.baseQuality
 summary['ReadLength']       = params.readLength
