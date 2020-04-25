@@ -41,8 +41,8 @@ def helpMessage() {
       --multimappers [bool]           Activate multimapper retainment strategy
       --quantseq [bool]               Deactivate nucleotide-conversion aware scoring
       --endtoend [bool]               Use a end to end alignment algorithm for mapping.
-      --min-coverage [int]            Minimimum coverage to call a SNP.
-      --var-fraction [float]          Minimimum variant fraction to call a SNP.
+      --min_coverage [int]            Minimimum coverage to call a SNP.
+      --var_fraction [float]          Minimimum variant fraction to call a SNP.
       --conversions [int]             Minimum number of conversions to count a read as converted read
       --baseQuality [int]             Minimum base quality to filter conversions
       --readLength [int]              Read length of processed reads
@@ -190,8 +190,8 @@ summary['Vcf']              = params.vcf
 summary['Multimappers']     = params.multimappers
 summary['Quantseq']         = params.quantseq
 summary['Endtoend']         = params.endtoend
-summary['Minimum coverage'] = params.min-coverage
-summary['Variant fraction'] = params.var-fraction
+summary['Minimum coverage'] = params.min_coverage
+summary['Variant fraction'] = params.var_fraction
 summary['Conversions']      = params.conversions
 summary['BaseQuality']      = params.baseQuality
 summary['ReadLength']       = params.readLength
