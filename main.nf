@@ -46,6 +46,7 @@ def helpMessage() {
       --conversions [int]             Minimum number of conversions to count a read as converted read
       --baseQuality [int]             Minimum base quality to filter conversions
       --readLength [int]              Read length of processed reads
+      --pvalue [float]                P-value cutoff for MA plot
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -197,6 +198,7 @@ summary['Variant fraction'] = params.var_fraction
 summary['Conversions']      = params.conversions
 summary['BaseQuality']      = params.baseQuality
 summary['ReadLength']       = params.readLength
+summary['P-value']          = params.pvalue
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
@@ -505,7 +507,7 @@ process rates {
     """
     alleyoop rates -o rates \
        -r ${fasta} \
-       -mq 27 \
+       -mq ${params.baseQuality} \
        -t ${task.cpus} \
        ${filter[0]}
     """
@@ -530,7 +532,7 @@ process utrrates {
     """
     alleyoop utrrates -o utrrates \
        -r ${fasta} \
-       -mq 27 \
+       -mq ${params.baseQuality} \
        -b ${bed} \
        -l ${params.readLength} \
        -t ${task.cpus} \
@@ -553,11 +555,12 @@ process tcperreadpos {
     file("tcperreadpos/*csv") into alleyoopTcPerReadPosOut
 
     script:
+    snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
     """
     alleyoop tcperreadpos -o tcperreadpos \
        -r ${fasta} \
-       -s . \
-       -mq 27 \
+       ${snpMode} \
+       -mq ${params.baseQuality} \
        -l ${params.readLength} \
        -t ${task.cpus} \
        ${filter[0]}
@@ -580,12 +583,13 @@ process tcperutrpos {
     file("tcperutrpos/*csv") into alleyoopTcPerUtrPosOut
 
     script:
+    snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
     """
     alleyoop tcperutrpos -o tcperutrpos \
        -r ${fasta} \
        -b ${bed} \
-       -s . \
-       -mq 27 \
+       ${snpMode} \
+       -mq ${params.baseQuality} \
        -l ${params.readLength} \
        -t ${task.cpus} \
        ${filter[0]}
@@ -651,7 +655,7 @@ process deseq2 {
     script:
 
     """
-    deseq2_slamdunk.r -t ${celltype} -d ${conditions} -c counts -O ${celltype}
+    deseq2_slamdunk.r -t ${celltype} -d ${conditions} -c counts -p ${params.pvalue} -O ${celltype}
     """
 }
 

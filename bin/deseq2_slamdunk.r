@@ -15,6 +15,7 @@ spec = matrix(c(
   'celltype', 't', 2, "character", "celltype",
   'design', "d", 2,"character","Design file",
   'countFolder', "c", 2,"character","Count file folder",
+  'pvalue', "p", 2,"numeric","p-value cutoff",
   'output', "O", 2,"character","Output folder"
 ),ncol = 5,byrow=T)
 
@@ -33,6 +34,7 @@ if ( !is.null(opt$help) || length(opt)==3 ) {
 if ( is.null(opt$celltype) ) stop("arg celltype must be specified")
 if ( is.null(opt$design) ) stop("arg design must be specified")
 if ( is.null(opt$countFolder) ) stop("arg countFolder must be specified")
+if ( is.null(opt$pvalue) ) { opt$pvalue = 0.1 }
 if ( is.null(opt$output) ) { opt$output = opt$celltype }
 
 ######################
@@ -148,13 +150,13 @@ getContrast <- function(counts, dds, case, control) {
     arrange(padj,log2FC_deseq2)
 }
 
-MAPlot <- function(export.deseq2, case, control) {
+MAPlot <- function(export.deseq2, case, control, cutoff) {
 
   ###  Export MA-plots of differential gene expression calling
 
   #  Extract EntrezIDs for (top 20) deregulated genes for plotting
 
-  dereg <- export.deseq2[which(export.deseq2$padj <= 0.1), ] # all dereg. genes
+  dereg <- export.deseq2[which(export.deseq2$padj <= cutoff), ] # all dereg. genes
   down <- nrow(dereg[dereg$log2FC_deseq2 <= 0, ]) # downregulated genes
   up <- nrow(dereg[dereg$log2FC_deseq2 >= 0, ]) # upregulated genes
   top.dereg <- dereg[order(abs(dereg$log2FC_deseq2), decreasing = T)[1:20], 1]
@@ -328,7 +330,7 @@ for (case in cases) {
   ######################
 
   pdf(file.path(opt$output,case,"MAPlot.pdf"))
-  MAPlot(export.deseq2, case, ctrl)
+  MAPlot(export.deseq2, case, ctrl, opt$pvalue)
   dev.off()
 
 }
