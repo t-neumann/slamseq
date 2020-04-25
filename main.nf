@@ -282,6 +282,7 @@ splitChannel
    .map{it ->
        return it.name
    }
+   .combine(vcfChannel)
    .subscribe{println it}
 
 /*
