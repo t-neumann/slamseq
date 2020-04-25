@@ -283,7 +283,7 @@ splitChannel
        return it.name
    }
    .combine(vcfChannel)
-   .subscribe{println it}
+   .set{ vcfCombineChannel }
 
 /*
  * STEP 1 - TrimGalore!
@@ -398,30 +398,7 @@ process trim {
      """
  }
 
- /*
-  * Mock - Snp
-  */
-  process mockSnp {
-
-      tag { name }
-
-      input:
-      set val(name), file(filter) from slamdunkFilterMock
-      file(vcf) from vcfChannel.collect()
-
-      output:
-      set val(name), file("*vcf[.gz]") into slamdunkSnpMock
-
-      when:
-      params.vcf
-
-      script:
-      """
-      echo "dummy"
-      """
-  }
-
-vcfComb = slamdunkSnp.mix(slamdunkSnpMock)
+vcfComb = slamdunkSnp.mix(vcfCombineChannel)
 
 // Join by column 3 (reads)
  slamdunkCount
