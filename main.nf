@@ -32,7 +32,8 @@ def helpMessage() {
     References                        If not specified in the configuration file or you wish to overwrite any of the references
       --fasta [file]                  Path to fasta reference
       --bed [file]                    Path to 3' UTR counting window reference
-      --mapping [file]                Path to 3' UTR multimapper recovery reference
+      --mapping [file]                Path to 3' UTR multimapper recovery reference (optional)
+      --vcf [file]                    Path to VCF file for genomic SNPs to mask T>C conversion (optional)
 
     Processing parameters
       --multimappers [bool]           Activate multimapper retainment strategy
@@ -130,6 +131,17 @@ if ( params.mapping ) {
         .set{ utrFilterChannel }
 }
 
+if ( params.vcf ) {
+  Channel
+        .fromPath(params.vcf, checkIfExists: true)
+        .ifEmpty { exit 1, "Vcf file not found: ${params.vcf}" }
+        .set{ vcfChannel }
+} else {
+  Channel
+        .empty()
+        .set{ vcfChannel }
+}
+
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
 custom_runName = params.name
@@ -168,6 +180,7 @@ summary['Run Name']         = custom_runName ?: workflow.runName
 // TODO nf-core: Report custom parameters here
 summary['Input']            = params.input
 summary['Fasta Ref']        = params.fasta
+summary['Vcf']              = params.vcf
 summary['Multimappers']     = params.multimappers
 summary['Conversions']      = params.conversions
 summary['BaseQuality']      = params.baseQuality
@@ -329,6 +342,7 @@ process trim {
 
       output:
       set val(name), file("filter/*bam*") into slamdunkFilter,
+                                               slamdunkFilterMock,
                                                slamdunkCount,
                                                slamdunkFilterSummary
 
@@ -361,6 +375,9 @@ process trim {
      output:
      set val(name), file("snp/*vcf") into slamdunkSnp
 
+     when:
+     !params.vcf
+
      script:
      """
      slamdunk snp -o snp \
@@ -371,14 +388,43 @@ process trim {
      """
  }
 
+ /*
+  * Mock - Snp
+  */
+  process mockSnp {
+
+      tag { name }
+
+      input:
+      set val(name), file(filter) from slamdunkFilterMock
+      file(vcf) from vcfChannel.collect()
+
+      output:
+      set val(name), file("*vcf") into slamdunkSnpMock
+
+
+      when:
+      params.vcf
+
+      script:
+      """
+      echo "dummy"
+      """
+  }
+
+vcfComb = slamdunkSnp.mix(slamdunkSnpMock)
+
 // Join by column 3 (reads)
  slamdunkCount
-     .join(slamdunkSnp)
+     .join(vcfComb)
      .into{ slamdunkResultsChannel ;
             slamdunkForRatesChannel ;
             slamdunkForUtrRatesChannel ;
             slamdunkForTcPerReadPosChannel ;
-            slamdunkForTcPerUtrPosChannel }
+            slamdunkForTcPerUtrPosChannel ;
+            plotChannel}
+
+plotChannel.subscribe{ println it}
 
 /*
 * STEP 5 - Count
