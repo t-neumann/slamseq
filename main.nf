@@ -263,7 +263,9 @@ process checkDesign {
     file (design) from checkChannel
 
     output:
-    file "nfcore_slamseq_design.txt" into deseq2ConditionChannel, splitChannel
+    file "nfcore_slamseq_design.txt" into deseq2ConditionChannel,
+                                          splitChannel,
+                                          vcfSampleChannel
 
     script:
     """
@@ -274,6 +276,13 @@ process checkDesign {
 splitChannel
    .splitCsv( header: true, sep: '\t' )
    .into { rawFiles ; conditionDeconvolution }
+
+  vcfSampleChannel
+   .splitCsv( header: true, sep: '\t' )
+   .map{it ->
+       return it.name
+   }
+   .subscribe{println it}
 
 /*
  * STEP 1 - TrimGalore!
@@ -373,7 +382,7 @@ process trim {
      each file(fasta) from fastaSnpChannel
 
      output:
-     set val(name), file("snp/*vcf") into slamdunkSnp
+     set val(name), file("snp/*vcf[.gz]") into slamdunkSnp
 
      when:
      !params.vcf
@@ -400,8 +409,7 @@ process trim {
       file(vcf) from vcfChannel.collect()
 
       output:
-      set val(name), file("*vcf") into slamdunkSnpMock
-
+      set val(name), file("*vcf[.gz]") into slamdunkSnpMock
 
       when:
       params.vcf
