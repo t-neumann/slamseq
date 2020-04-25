@@ -335,12 +335,16 @@ process trim {
      set val(parameters.name), file("map/*bam") into slamdunkMap
 
      script:
+     quantseq = params.quantseq ? "-q" : ""
+     endtoend = params.endtoend ? "-e" : ""
      """
      slamdunk map -r ${fasta} -o map \
-        -5 12 -n 100 -t ${task.cpus} \
+        -5 ${params.trim5} -n 100 \
+        -a ${params.polyA} -t ${task.cpus} \
         --sampleName ${parameters.name} \
         --sampleType ${parameters.type} \
         --sampleTime ${parameters.time} --skip-sam \
+        ${quantseq} ${endtoend} \
         ${fastq}
      """
  }
