@@ -60,13 +60,13 @@ nf-core/slamseq was originally written by Tobias Neumann ([@t-neumann](https://g
 
 Many thanks to other who have helped out along the way too, including (but not limited to):
 [@apeltzer](https://github.com/apeltzer),
-[@drpatelh](https://github.com/drpatelh).
+[@drpatelh](https://github.com/drpatelh),
 [@pditommaso](https://github.com/pditommaso),
 [@maxulysse](https://github.com/MaxUlysse),
 [@ewels](https://github.com/ewels),
 [@zethson](https://github.com/Zethson),
 [@bgruening](https://github.com/bgruening),
-[@micans](https://github.com/micans)
+[@micans](https://github.com/micans).
 
 ## Contributions and Support
 
@@ -95,3 +95,5 @@ You can cite the `nf-core` publication as follows:
 >
 > _Nat Biotechnol._ 2020 Feb 13. doi: [10.1038/s41587-020-0439-x](https://dx.doi.org/10.1038/s41587-020-0439-x).  
 > ReadCube: [Full Access Link](https://rdcu.be/b1GjZ)
+
+An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
