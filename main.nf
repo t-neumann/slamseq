@@ -642,36 +642,27 @@ slamdunkCountAlleyoop
 /*
 * STEP 11 - Summary
 */
-if (params.quantseq) {
-  process summary {
+process summary {
 
-      input:
-      file("filter/*") from slamdunkFilterSummaryCollected
+    input:
+    file("filter/*") from slamdunkFilterSummaryCollected
+    file("count/*") from slamdunkCountAlleyoopCollected.ifEmpty([])
 
-      output:
-      file("summary*.txt") into summaryQC
+    output:
+    file("summary*.txt") into summaryQC
 
-      script:
+    script:
+    if (params.quantseq) {
       """
       alleyoop summary -o summary.txt ./filter/*bam
       """
-  }
-} else {
-  process summary {
-
-      input:
-      file("filter/*") from slamdunkFilterSummaryCollected
-      file("count/*") from slamdunkCountAlleyoopCollected
-
-      output:
-      file("summary*.txt") into summaryQC
-
-      script:
+    } else {
       """
       alleyoop summary -o summary.txt -t ./count ./filter/*bam
       """
-  }
+    }
 }
+
 
 conditionDeconvolution
     .map{it ->
