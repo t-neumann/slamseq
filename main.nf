@@ -305,7 +305,11 @@ splitChannel
  * STEP 1 - TrimGalore!
  */
 if (params.skipTrimming) {
-    trimmedFiles = rawFiles
+    rawFiles
+       .map{it ->
+        return tuple(it, file(it.reads))
+       }
+       .set{ trimmedFiles }
     trimgaloreQC = Channel.empty()
     trimgaloreFastQC = Channel.empty()
 } else {

@@ -78,7 +78,7 @@ with open(args.DESIGN_FILE_IN, 'r') as f:
 
     for line in f:
         fields = line.rstrip().split("\t")
-        celltype = fields[0]
+        group = fields[0]
         condition = fields[1]
         control = fields[2]
         reads = fields[3]
@@ -116,6 +116,6 @@ with open(args.DESIGN_FILE_IN, 'r') as f:
             print("{}: Reads FastQ file has incorrect extension (has to be '.fastq.gz' or 'fq.gz') - {}\nLine: '{}'".format(ERROR_STR,fastq,line.strip()))
             sys.exit(1)
 
-        fout.write("\t".join([celltype, condition, control, reads, name, type, time]) + "\n")
+        fout.write("\t".join([group, condition, control, reads, name, type, time]) + "\n")
 
 fout.close()
