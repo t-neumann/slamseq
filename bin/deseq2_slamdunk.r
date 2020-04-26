@@ -12,7 +12,7 @@ library(getopt)
 
 spec = matrix(c(
   'help'      , 'h', 0, "logical","print the usage of the command",
-  'celltype', 't', 2, "character", "celltype",
+  'group', 't', 2, "character", "group",
   'design', "d", 2,"character","Design file",
   'countFolder', "c", 2,"character","Count file folder",
   'pvalue', "p", 2,"numeric","p-value cutoff",
@@ -31,11 +31,11 @@ if ( !is.null(opt$help) || length(opt)==3 ) {
   q(status=1);
 }
 
-if ( is.null(opt$celltype) ) stop("arg celltype must be specified")
+if ( is.null(opt$group) ) stop("arg group must be specified")
 if ( is.null(opt$design) ) stop("arg design must be specified")
 if ( is.null(opt$countFolder) ) stop("arg countFolder must be specified")
 if ( is.null(opt$pvalue) ) { opt$pvalue = 0.1 }
-if ( is.null(opt$output) ) { opt$output = opt$celltype }
+if ( is.null(opt$output) ) { opt$output = opt$group }
 
 ######################
 # Start of script
@@ -272,7 +272,7 @@ MAPlot <- function(export.deseq2, case, control, cutoff) {
 design = read_tsv(opt$design)
 
 design = design %>%
-  filter(celltype == opt$celltype)
+  filter(group == opt$group)
 
 countFiles = list.files(opt$countFolder, pattern = ".csv")
 
