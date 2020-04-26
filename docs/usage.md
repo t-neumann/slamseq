@@ -10,10 +10,12 @@
 * [Main arguments](#main-arguments)
   * [`-profile`](#-profile)
   * [`--input`](#--input)
-  * [`--single_end`](#--single_end)
 * [Reference genomes](#reference-genomes)
   * [`--genome` (using iGenomes)](#--genome-using-igenomes)
   * [`--fasta`](#--fasta)
+  * [`--bed`](#--bed)
+  * [`--mapping`](#--mapping)
+  * [`--vcf`](#--vcf)
   * [`--igenomes_ignore`](#--igenomes_ignore)
 * [Job resources](#job-resources)
   * [Automatic resubmission](#automatic-resubmission)
@@ -22,6 +24,18 @@
   * [`--awsqueue`](#--awsqueue)
   * [`--awsregion`](#--awsregion)
   * [`--awscli`](#--awscli)
+* [Processing parameters](#processing-parameters)
+  * [`--trim5`](#--trim5)
+  * [`--polyA`](#--polyA)
+  * [`--multimappers`](#--multimappers)
+  * [`--quantseq`](#--quantseq)
+  * [`--endtoend`](#--endtoend)
+  * [`--min_coverage`](#--min_coverage)
+  * [`--var_fraction`](#--var_fraction)
+  * [`--conversions`](#--conversions)
+  * [`--baseQuality`](#--baseQuality)
+  * [`--readLength`](#--readLength)
+  * [`--pvalue`](#--pvalue)
 * [Other command line parameters](#other-command-line-parameters)
   * [`--outdir`](#--outdir)
   * [`--email`](#--email)
@@ -208,7 +222,7 @@ There are 31 different species supported in the iGenomes references. To run the 
 You can find the keys to specify the genomes in the [iGenomes config file](../conf/igenomes.config). Common genomes that are supported are:
 
 * Human
-  * `--genome GRCh37`
+  * `--genome GRCh38`
 * Mouse
   * `--genome GRCm38`
 * _Drosophila_
@@ -228,7 +242,8 @@ The syntax for this reference configuration is as follows:
 params {
   genomes {
     'GRCh37' {
-      fasta   = '<path to the genome fasta file>' // Used if no star index given
+      fasta   = '<path to the genome fasta file>' // Used if fasta given
+      gtf     = '<path to the genome gtf file>' // Used if no bed given
     }
     // Any number of additional genomes, key is used with --genome
   }
@@ -239,10 +254,35 @@ params {
 
 ### `--fasta`
 
-If you prefer, you can specify the full path to your reference genome when you run the pipeline:
+Full path to fasta file containing reference genome (*mandatory* if `--genome` is not specified).
 
 ```bash
---fasta '[path to Fasta reference]'
+--fasta '[path to FASTA reference]'
+```
+
+### `--bed`
+
+Full path to bed file containing 3' end counting windows (*mandatory* if `--genome` is not specified).
+
+```bash
+--bed '[path to counting windows bed]'
+```
+
+### `--mapping`
+
+Full path to bed file containing 3' UTRs for multimapper recovery (optional).
+
+```bash
+--mapping '[path to UTR bed]'
+```
+
+### `--vcf`
+
+Path to VCF file for genomic SNPs to mask T>C conversions (optional)
+Full path to VCF file for genomic SNPs to mask T>C conversions (optional). Bypasses `slamdunk snp` step.
+
+```bash
+--vcf '[path to SNP vcf]'
 ```
 
 ### `--igenomes_ignore`
@@ -280,6 +320,84 @@ The AWS region in which to run your job. Default is set to `eu-west-1` but can b
 The [AWS CLI](https://www.nextflow.io/docs/latest/awscloud.html#aws-cli-installation) path in your custom AMI. Default: `/home/ec2-user/miniconda/bin/aws`.
 
 Please make sure to also set the `-w/--work-dir` and `--outdir` parameters to a S3 storage bucket of your choice - you'll get an error message notifying you if you didn't.
+
+## Processing parameters
+
+### `--trim5`
+
+Integer indicating the number of basepairs to trim from the 5' end of the reads.
+
+```bash
+--trim5 '[number of  bp to trim from 5prime end]'
+```
+
+### `--polyA`
+
+Integer indicating the maximum number of As at the 3' end of a read before considering them as poly-As and trimming them.
+
+```bash
+--polyA '[Maximum 3prime end read As]'
+```
+
+### `--multimappers`
+
+Boolean flag activating the [multimapper recovery strategy](https://t-neumann.github.io/slamdunk/docs.html#multimapper-reconciliation). Will either use the bed file supplied by `--mapping` or alternatively use the plain `--bed` file.
+
+### `--quantseq`
+
+Boolean flag deactivating the conversion-aware scoring scheme in [NextGenMap](http://cibiv.github.io/NextGenMap/). This will result in always zero T>C reads and render [DESeq2](https://doi.org/10.1186/s13059-014-0550-8) analysis meaningless.
+
+### `--endtoend`
+
+Boolean flag to activate end-to-end mapping in [NextGenMap](http://cibiv.github.io/NextGenMap/).
+
+### `--min_coverage`
+
+Minimum coverage to call a SNP as integer.
+
+```bash
+--min_coverage '[Minimum coverage to call a SNP]'
+```
+
+### `--var_fraction`
+
+Minimum variant fraction to call a SNP as float.
+
+```bash
+--var_fraction '[Minimum variant fraction to call a SNP]'
+```
+
+### `--conversions`
+
+Minimum number of T>C conversions in a read to call it a T>C read.
+
+```bash
+--conversions '[Number of conversions to call a T>C read]'
+```
+
+### `--baseQuality`
+
+Minimum base quality to call a T>C conversion as integer.
+
+```bash
+--baseQuality '[Minimum base quality for a T>C conversion]'
+```
+
+### `--readLength`
+
+Read length of your samples as integer.
+
+```bash
+--readLength '[Read length of your samples]'
+```
+
+### `--pvalue`
+
+P-value cutoff for the MA-plots.
+
+```bash
+--pvalue '[P-value cutoff]'
+```
 
 ## Other command line parameters
 
