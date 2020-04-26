@@ -56,7 +56,17 @@ The nf-core/slamseq pipeline comes with documentation about the pipeline, found 
 
 ## Credits
 
-nf-core/slamseq was originally written by Tobias Neumann.
+nf-core/slamseq was originally written by Tobias Neumann ([@t-neumann](https://github.com/t-neumann)) for the use at the [IMP Vienna](https://www.imp.ac.at/).
+
+Many thanks to other who have helped out along the way too, including (but not limited to):
+[@apeltzer](https://github.com/apeltzer),
+[@drpatelh](https://github.com/drpatelh).
+[@pditommaso](https://github.com/pditommaso),
+[@maxulysse](https://github.com/MaxUlysse),
+[@ewels](https://github.com/ewels),
+[@zethson](https://github.com/Zethson),
+[@bgruening](https://github.com/bgruening),
+[@micans](https://github.com/micans)
 
 ## Contributions and Support
 
