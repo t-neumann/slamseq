@@ -55,8 +55,8 @@ args = argParser.parse_args()
 
 ERROR_STR = 'ERROR: Please check design file'
 
-HEADER = ['celltype', 'condition', 'control', 'reads']
-EXTHEADER = ['celltype', 'condition', 'control', 'reads','name','type','time']
+HEADER = ['group', 'condition', 'control', 'reads']
+EXTHEADER = ['group', 'condition', 'control', 'reads','name','type','time']
 
 fout = open(args.DESIGN_FILE_OUT,'w')
 

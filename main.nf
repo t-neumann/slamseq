@@ -306,8 +306,8 @@ splitChannel
  */
 if (params.skipTrimming) {
     trimmedFiles = rawFiles
-    trimgaloreQC = []
-    trimgaloreFastQC = []
+    trimgaloreQC = Channel.empty()
+    trimgaloreFastQC = Channel.empty()
 } else {
   process trim {
 
