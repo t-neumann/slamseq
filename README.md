@@ -11,6 +11,8 @@
 
 ## Introduction
 
+The worklow processes [SLAMSeq](https://doi.org/10.1038/nmeth.4435) datasets using [Slamdunk](https://doi.org/10.1186/s12859-019-2849-7) and infers [direct transcriptional targets](https://doi.org/10.1126/science.aao2793) using [DESeq2](https://doi.org/10.1186/s13059-014-0550-8).
+
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It comes with docker containers making installation trivial and results highly reproducible.
 
 ## Quick Start
@@ -32,7 +34,7 @@ iv. Start running your own analysis!
 <!-- TODO nf-core: Update the default command above used to run the pipeline -->
 
 ```bash
-nextflow run nf-core/slamseq -profile <docker/singularity/conda/institute> --reads '*_R{1,2}.fastq.gz' --genome GRCh37
+nextflow run nf-core/slamseq -profile <docker/singularity/conda/institute> --input design.tsv --genome GRCh38
 ```
 
 See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
@@ -66,6 +68,14 @@ For further information or help, don't hesitate to get in touch on [Slack](https
 
 <!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
 <!-- If you use  nf-core/slamseq for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+
+You can cite `slamdunk` as follows:
+
+> **Quantification of experimentally induced nucleotide conversions in high-throughput sequencing datasets.**
+>
+> Tobias Neumann, Veronika A. Herzog, Matthias Muhar, Arndt von Haeseler, Johannes Zuber, Stefan L. Ameres & Philipp Rescheneder.
+>
+> _BMC Bioinformatics_ 2019 May 20. doi: [10.1186/s12859-019-2849-7](https://doi.org/10.1186/s12859-019-2849-7).
 
 You can cite the `nf-core` publication as follows:
 
