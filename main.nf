@@ -47,6 +47,7 @@ def helpMessage() {
       --baseQuality [int]             Minimum base quality to filter conversions
       --readLength [int]              Read length of processed reads
       --pvalue [float]                P-value cutoff for MA plot
+      --skipTrimming [bool]           Skip trimming step
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -199,6 +200,7 @@ summary['Conversions']      = params.conversions
 summary['BaseQuality']      = params.baseQuality
 summary['ReadLength']       = params.readLength
 summary['P-value']          = params.pvalue
+summary['Skip Trimming']    = params.skipTrimming
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
@@ -302,24 +304,30 @@ splitChannel
 /*
  * STEP 1 - TrimGalore!
  */
-process trim {
+if (params.skipTrimming) {
+    trimmedFiles = rawFiles
+    trimgaloreQC = []
+    trimgaloreFastQC = []
+} else {
+  process trim {
 
-     tag { parameters.name }
+       tag { parameters.name }
 
-     input:
-     val(parameters) from rawFiles
+       input:
+       val(parameters) from rawFiles
 
-     output:
-     set val(parameters), file("TrimGalore/${parameters.name}.fastq.gz") into trimmedFiles
-     file ("TrimGalore/*.txt") into trimgaloreQC
-     file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
+       output:
+       set val(parameters), file("TrimGalore/${parameters.name}.fastq.gz") into trimmedFiles
+       file ("TrimGalore/*.txt") into trimgaloreQC
+       file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
 
-     script:
-     """
-     mkdir -p TrimGalore
-     trim_galore ${parameters.reads} --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
-     mv TrimGalore/*.fq.gz TrimGalore/${parameters.name}.fastq.gz
-     """
+       script:
+       """
+       mkdir -p TrimGalore
+       trim_galore ${parameters.reads} --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
+       mv TrimGalore/*.fq.gz TrimGalore/${parameters.name}.fastq.gz
+       """
+  }
 }
 
 /*

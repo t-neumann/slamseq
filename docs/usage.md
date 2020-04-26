@@ -36,6 +36,7 @@
   * [`--baseQuality`](#--baseQuality)
   * [`--readLength`](#--readLength)
   * [`--pvalue`](#--pvalue)
+  * [`--skipTrimming`](#--skipTrimming)
 * [Other command line parameters](#other-command-line-parameters)
   * [`--outdir`](#--outdir)
   * [`--email`](#--email)
@@ -398,6 +399,10 @@ P-value cutoff for the MA-plots.
 ```bash
 --pvalue '[P-value cutoff]'
 ```
+
+### `--skipTrimming`
+
+Booelan flag to skip trimming with [`Trim Galore!`](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/).
 
 ## Other command line parameters
 
