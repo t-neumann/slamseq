@@ -9,7 +9,7 @@
   * [Reproducibility](#reproducibility)
 * [Main arguments](#main-arguments)
   * [`-profile`](#-profile)
-  * [`--reads`](#--reads)
+  * [`--input`](#--input)
   * [`--single_end`](#--single_end)
 * [Reference genomes](#reference-genomes)
   * [`--genome` (using iGenomes)](#--genome-using-igenomes)
@@ -56,7 +56,7 @@ NXF_OPTS='-Xms1g -Xmx4g'
 The typical command for running the pipeline is as follows:
 
 ```bash
-nextflow run nf-core/slamseq --reads '*_R{1,2}.fastq.gz' -profile docker
+nextflow run nf-core/slamseq --input input.tsv -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -119,31 +119,83 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 
 <!-- TODO nf-core: Document required command line parameters -->
 
-### `--reads`
+### `--input`
 
-Use this to specify the location of your input FastQ files. For example:
-
-```bash
---reads 'path/to/data/sample_*_{1,2}.fastq'
-```
-
-Please note the following requirements:
-
-1. The path must be enclosed in quotes
-2. The path must have at least one `*` wildcard character
-3. When using the pipeline with paired end data, the path must use `{1,2}` notation to specify read pairs.
-
-If left unspecified, a default pattern is used: `data/*{1,2}.fastq.gz`
-
-### `--single_end`
-
-By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--single_end` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
+You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a tab-separated file with minimum 4 columns, and a header row as shown in the examples below.
 
 ```bash
---single_end --reads '*.fastq'
+--input '[path to design file]'
 ```
 
-It is not possible to run a mixture of single-end and paired-end files in one run.
+#### Required columns
+
+The `group` identifier demarks a given celltype or patient in which an experiment was performed and should be identical for all conditions and replicates in which an experiment was performed. The `condition` identifier demarks a given condition such as a control / drug treatment or WT / KO genotype and should be identical for all replicates of the given condition. The `control` identifier is used to demark all replicates of a control `condition` with a given `group` and should be `1` for control replicates and `0` for all others. This is used to set up the proper contrasts for the [DESeq2](https://doi.org/10.1186/s13059-014-0550-8) analysis. The last required column is `reads` pointing to the associated raw read sets in fastq format.
+
+In the design below there a triplicate samples for two groups (`K562` and `OCIAML3`) with two conditions each (one control condition `DMSO` and two treatment conditions `NVP.lo` and `NVP.hi`).
+
+```bash
+group  condition control reads
+MOLM-13 DMSO  1 MOLM-13_dmso_1.fq.gz
+MOLM-13 DMSO  1 MOLM-13_dmso_2.fq.gz
+MOLM-13 DMSO  1 MOLM-13_dmso_3.fq.gz
+MOLM-13 NVP_hi  0 MOLM-13_nvp.hi_1.fq.gz
+MOLM-13 NVP_hi  0 MOLM-13_nvp.hi_2.fq.gz
+MOLM-13 NVP_hi  0 MOLM-13_nvp.hi_3.fq.gz
+MOLM-13 NVP_lo  0 MOLM-13_nvp.lo_1.fq.gz
+MOLM-13 NVP_lo  0 MOLM-13_nvp.lo_2.fq.gz
+MOLM-13 NVP_lo  0 MOLM-13_nvp.lo_3.fq.gz
+OCIAML3 DMSO  1 OCIAML3_dmso_1.fq.gz
+OCIAML3 DMSO  1 OCIAML3_dmso_2.fq.gz
+OCIAML3 DMSO  1 OCIAML3_dmso_3.fq.gz
+OCIAML3 NVP_hi  0 OCIAML3_nvp.hi_1.fq.gz
+OCIAML3 NVP_hi  0 OCIAML3_nvp.hi_2.fq.gz
+OCIAML3 NVP_hi  0 OCIAML3_nvp.hi_3.fq.gz
+OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_1.fq.gz
+OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_2.fq.gz
+OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_3.fq.gz
+```
+
+#### Optional columns
+
+In the above example the sample name will be derived from the read file name in the `reads` column. If you want to have control over the sample naming, you can add three additional metadata columns for file naming and information about whether the samples were produced in a `pulse` or `chase` experiment as well as the duration of the `4SU` treatment in minutes. The latter two columns `type` and `time` can be to facilitate half-life estimates.
+
+If those columns are left empty or in the minimal design above, the `type` column will default to `pulse` and the `time` column to `0`.
+
+A full design file using the above example may look something like the one below:
+
+```bash
+group  condition control reads name  type  time
+MOLM-13 DMSO  1 MOLM-13_dmso_1.fq.gz  M13_DMSO_1  pulse 60
+MOLM-13 DMSO  1 MOLM-13_dmso_2.fq.gz  M13_DMSO_2  pulse 60
+MOLM-13 DMSO  1 MOLM-13_dmso_3.fq.gz  M13_DMSO_3  pulse 60
+MOLM-13 NVP_hi  0 MOLM-13_nvp.hi_1.fq.gz  M13_NVP_HI_1  pulse 60
+MOLM-13 NVP_hi  0 MOLM-13_nvp.hi_2.fq.gz  M13_NVP_HI_2  pulse 60
+MOLM-13 NVP_hi  0 MOLM-13_nvp.hi_3.fq.gz  M13_NVP_HI_3  pulse 60
+MOLM-13 NVP_lo  0 MOLM-13_nvp.lo_1.fq.gz  M13_NVP_LO_1  pulse 60
+MOLM-13 NVP_lo  0 MOLM-13_nvp.lo_2.fq.gz  M13_NVP_LO_2  pulse 60
+MOLM-13 NVP_lo  0 MOLM-13_nvp.lo_3.fq.gz  M13_NVP_LO_3  pulse 60
+OCIAML3 DMSO  1 OCIAML3_dmso_1.fq.gz  O3_DMSO_1 pulse 60
+OCIAML3 DMSO  1 OCIAML3_dmso_2.fq.gz  O3_DMSO_2 pulse 60
+OCIAML3 DMSO  1 OCIAML3_dmso_3.fq.gz  O3_DMSO_3 pulse 60
+OCIAML3 NVP_hi  0 OCIAML3_nvp.hi_1.fq.gz  O3_NVP_HI_1 pulse 60
+OCIAML3 NVP_hi  0 OCIAML3_nvp.hi_2.fq.gz  O3_NVP_HI_2 pulse 60
+OCIAML3 NVP_hi  0 OCIAML3_nvp.hi_3.fq.gz  O3_NVP_HI_3 pulse 60
+OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_1.fq.gz  O3_NVP_LO_1 pulse 60
+OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_2.fq.gz  O3_NVP_LO_2 pulse 60
+OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_3.fq.gz  O3_NVP_LO_3 pulse 60
+```
+
+| Column      | Description                                                                                                                                      |
+|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| `group`     | Group identifier for sample. This will be identical for all conditions and replicate samples from the same experimental group. |
+| `condition` | Condition within a given group, such as a control / drug treatment or WT / KO condition. This will be identical for all replicate samples of a given condition.           |
+| `control` | Integer value denoting whether a sample belongs to a control condition `1` or not `0`. This is used to build contrasts for DE-analysis.           |
+| `reads`   | Full path to reads FastQ file. File has to be zipped and have the extension ".fastq.gz" or ".fq.gz".                                        |
+| `name`   | Sample name                                        |
+| `type`  | Type of the labelling experiment. Has to be either `pulse` or `chase`.                 |
+| `time`   | Labelling time with 4SU in minute.     |
+
+Example design files have been provided in the [test-datasets](../assets/design_pe.csv).
 
 ## Reference genomes
 
