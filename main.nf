@@ -629,7 +629,7 @@ process summary {
 
 conditionDeconvolution
     .map{it ->
-        return tuple(it.name, it.celltype)
+        return tuple(it.name, it.group)
     }
     .join(slamdunkCollapseOut)
     .map{it ->
@@ -647,15 +647,15 @@ process deseq2 {
 
     input:
     file (conditions) from deseq2ConditionChannel.collect()
-    set val(celltype), file("counts/*") from deseq2FileChannel
+    set val(group), file("counts/*") from deseq2FileChannel
 
     output:
-    file("${celltype}") into deseq2out
+    file("${group}") into deseq2out
 
     script:
 
     """
-    deseq2_slamdunk.r -t ${celltype} -d ${conditions} -c counts -p ${params.pvalue} -O ${celltype}
+    deseq2_slamdunk.r -t ${group} -d ${conditions} -c counts -p ${params.pvalue} -O ${group}
     """
 }
 
@@ -663,7 +663,7 @@ process deseq2 {
  * STEP 13 - MultiQC
  */
 process multiqc {
-    publishDir "${params.outdir}/MultiQC", mode: 'copy'
+    publishDir "${params.outdir}/multiqc", mode: 'copy'
 
     input:
     file (multiqc_config) from ch_multiqc_config
