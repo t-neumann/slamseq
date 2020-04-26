@@ -1,7 +1,5 @@
 # ![nf-core/slamseq](docs/images/nf-core-slamseq_logo.png)
 
-**SLAMseq analysis using Slamdunk with various T>C conversion quantifications and QC**.
-
 [![GitHub Actions CI Status](https://github.com/nf-core/slamseq/workflows/nf-core%20CI/badge.svg)](https://github.com/nf-core/slamseq/actions)
 [![GitHub Actions Linting Status](https://github.com/nf-core/slamseq/workflows/nf-core%20linting/badge.svg)](https://github.com/nf-core/slamseq/actions)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
@@ -11,7 +9,9 @@
 
 ## Introduction
 
-The worklow processes [SLAMSeq](https://doi.org/10.1038/nmeth.4435) datasets using [Slamdunk](https://doi.org/10.1186/s12859-019-2849-7) and infers [direct transcriptional targets](https://doi.org/10.1126/science.aao2793) using [DESeq2](https://doi.org/10.1186/s13059-014-0550-8).
+**nf-core/slamseq** is a bioinformatics analysis pipeline used for [SLAMSeq](https://doi.org/10.1038/nmeth.4435) sequencing data.
+
+The workflow processes SLAMSeq datasets using [Slamdunk](https://doi.org/10.1186/s12859-019-2849-7) and infers [direct transcriptional targets](https://doi.org/10.1126/science.aao2793) using [DESeq2](https://doi.org/10.1186/s13059-014-0550-8).
 
 The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool to run tasks across multiple compute infrastructures in a very portable manner. It comes with docker containers making installation trivial and results highly reproducible.
 
