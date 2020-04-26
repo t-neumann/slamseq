@@ -382,7 +382,6 @@ if (params.skipTrimming) {
 
       output:
       set val(name), file("filter/*bam*") into slamdunkFilter,
-                                               slamdunkFilterMock,
                                                slamdunkCount,
                                                slamdunkFilterSummary
 
@@ -416,7 +415,7 @@ if (params.skipTrimming) {
      set val(name), file("snp/*vcf") into slamdunkSnp
 
      when:
-     !params.vcf
+     !params.vcf && !params.quantseq
 
      script:
      """
@@ -460,6 +459,9 @@ process count {
     set val(name), file("count/*tsv") into slamdunkCountOut,
                                            slamdunkCountAlleyoop
 
+    when:
+    !params.quantseq
+
     script:
     snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
     """
@@ -492,6 +494,9 @@ process collapse {
     output:
     set val(name), file("collapse/*csv") into slamdunkCollapseOut
 
+    when:
+    !params.quantseq
+
     script:
     """
     alleyoop collapse -o collapse \
@@ -514,6 +519,9 @@ process rates {
 
     output:
     file("rates/*csv") into alleyoopRatesOut
+
+    when:
+    !params.quantseq
 
     script:
     """
@@ -540,6 +548,9 @@ process utrrates {
     output:
     file("utrrates/*csv") into alleyoopUtrRatesOut
 
+    when:
+    !params.quantseq
+
     script:
     """
     alleyoop utrrates -o utrrates \
@@ -565,6 +576,9 @@ process tcperreadpos {
 
     output:
     file("tcperreadpos/*csv") into alleyoopTcPerReadPosOut
+
+    when:
+    !params.quantseq
 
     script:
     snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
@@ -593,6 +607,9 @@ process tcperutrpos {
 
     output:
     file("tcperutrpos/*csv") into alleyoopTcPerUtrPosOut
+
+    when:
+    !params.quantseq
 
     script:
     snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
@@ -624,19 +641,35 @@ slamdunkCountAlleyoop
 /*
 * STEP 11 - Summary
 */
-process summary {
+if (params.quantseq) {
+  process summary {
 
-    input:
-    file("filter/*") from slamdunkFilterSummaryCollected
-    file("count/*") from slamdunkCountAlleyoopCollected
+      input:
+      file("filter/*") from slamdunkFilterSummaryCollected
 
-    output:
-    file("summary*.txt") into summaryQC
+      output:
+      file("summary*.txt") into summaryQC
 
-    script:
-    """
-    alleyoop summary -o summary.txt -t ./count ./filter/*bam
-    """
+      script:
+      """
+      alleyoop summary -o summary.txt ./filter/*bam
+      """
+  }
+} else {
+  process summary {
+
+      input:
+      file("filter/*") from slamdunkFilterSummaryCollected
+      file("count/*") from slamdunkCountAlleyoopCollected
+
+      output:
+      file("summary*.txt") into summaryQC
+
+      script:
+      """
+      alleyoop summary -o summary.txt -t ./count ./filter/*bam
+      """
+  }
 }
 
 conditionDeconvolution
@@ -663,6 +696,9 @@ process deseq2 {
 
     output:
     file("${group}") into deseq2out
+
+    when:
+    !params.quantseq
 
     script:
 
