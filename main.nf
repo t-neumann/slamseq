@@ -368,11 +368,12 @@ if (params.skipTrimming) {
   */
   process filter {
 
-    publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy',
+    publishDir path: "${params.outdir}/slamdunk/bam", mode: 'copy',
                overwrite: 'true', pattern: "filter/*bam*",
-               saveAs: { it.endsWith(".bam") ? (it.endsWith(".bai") ? file(it).getName() : it ): it  }
-
-      publishDir path: "${params.outdir}/slamdunk/bam", mode: 'copy', overwrite: 'true', pattern: "*.bam*"
+               saveAs: { filename ->
+                             if (filename.endsWith(".bam")) file(filename).getName()
+                             else if (filename.endsWith(".bai")) file(filename).getName()
+                       }
 
       tag { name }
 
