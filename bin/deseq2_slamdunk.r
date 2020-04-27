@@ -274,6 +274,10 @@ design = read_tsv(opt$design)
 design = design %>%
   filter(group == opt$group)
 
+if (nrow(design) == length(unique(design$condition))) {
+  quit(save = "no", status = 0, runLast = TRUE)
+}
+
 countFiles = list.files(opt$countFolder, pattern = ".csv")
 
 counts = parseSample(file.path(opt$countFolder,countFiles[1]))

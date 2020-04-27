@@ -687,7 +687,7 @@ process deseq2 {
     set val(group), file("counts/*") from deseq2FileChannel
 
     output:
-    file("${group}") into deseq2out
+    file("${group}") optional true into deseq2out
 
     when:
     !params.quantseq
