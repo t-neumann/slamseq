@@ -48,6 +48,7 @@ def helpMessage() {
       --readLength [int]              Read length of processed reads
       --pvalue [float]                P-value cutoff for MA plot
       --skipTrimming [bool]           Skip trimming step
+      --skipDeseq2 [bool]             Skip trimming step
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -201,6 +202,7 @@ summary['BaseQuality']      = params.baseQuality
 summary['ReadLength']       = params.readLength
 summary['P-value']          = params.pvalue
 summary['Skip Trimming']    = params.skipTrimming
+summary['Skip DESeq2']      = params.skipDeseq2
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
@@ -690,7 +692,7 @@ process deseq2 {
     file("${group}") optional true into deseq2out
 
     when:
-    !params.quantseq
+    !params.quantseq && !params.skipDeseq2
 
     script:
 

@@ -404,6 +404,10 @@ P-value cutoff for the MA-plots.
 
 Booelan flag to skip trimming with [`Trim Galore!`](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/).
 
+### `--skipDeseq2`
+
+Booelan flag to skip differential transcriptional output anaysis with [DESeq2](https://doi.org/10.1186/s13059-014-0550-8).
+
 ## Other command line parameters
 
 <!-- TODO nf-core: Describe any other command line flags here -->
