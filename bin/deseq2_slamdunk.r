@@ -243,16 +243,16 @@ MAPlot <- function(export.deseq2, case, control, cutoff) {
   if(nrow(dereg) > 0){
 
     p.highlight <- p +
-      geom_point(data = df[!(df$EntrezID %in% dereg$EntrezID),],
+      geom_point(data = df[!(df$gene_name %in% dereg$gene_name),],
                  aes(x, y, col = "gray60"), size = 1.3, shape =16) +
-      geom_point(data = df[df$EntrezID %in% dereg$EntrezID,],
+      geom_point(data = df[df$gene_name %in% dereg$gene_name,],
                  aes(x, y, col = "red1"), size = 1.3, shape =16) +
       geom_abline(aes(intercept = -1, slope = 0), size = 0.8, linetype = 3) +
       geom_hline(yintercept = 0, size = 0.8) +
       geom_abline(aes(intercept = 1, slope = 0), size = 0.8, linetype = 3)
 
     p.highlight.2 <- p.highlight +
-      geom_label_repel(data = df[df$EntrezID %in% top.dereg,])
+      geom_label_repel(data = df[df$gene_name %in% top.dereg,])
 
     #  Export plot.
 
