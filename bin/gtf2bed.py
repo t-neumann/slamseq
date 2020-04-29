@@ -36,7 +36,7 @@ gtfFile = sys.argv[1]
 sources = dict()
 entryDict = dict()
 
-temp = tempfile.NamedTemporaryFile(delete=False)
+temp = tempfile.NamedTemporaryFile(delete=False, mode='w')
 
 with open(gtfFile, 'r') as f:
     for line in f:
@@ -89,7 +89,7 @@ for annotationSource in sources:
             if curTx != attributeDict['transcript_id'] and curTx != "":
 
                 cdsRank = cds.keys()
-                exonRank = exon.keys()
+                exonRank = list(exon.keys())
 
                 if len(cdsRank) == 0:
                     if (curStrand == "+") :
