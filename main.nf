@@ -84,15 +84,51 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
 //
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
 if (params.fasta) {
-  Channel
-      .fromPath( params.fasta,  checkIfExists: true)
-      .into { fastaMapChannel ;
-              fastaSnpChannel ;
-              fastaCountChannel ;
-              fastaRatesChannel ;
-              fastaUtrRatesChannel ;
-              fastaReadPosChannel ;
-              fastaUtrPosChannel }
+  if (params.fasta.endsWith(".gz")) {
+    Channel
+        .fromPath( params.fasta,  checkIfExists: true)
+        .set { fastaGunzipChannel }
+
+    process gunzipFasta {
+          tag "$params.fasta"
+
+          input:
+          file fasta from fastaGunzipChannel
+
+          output:
+          file "ref.fa" into fastaMapChannel,
+                           fastaSnpChannel,
+                           fastaCountChannel,
+                           fastaRatesChannel,
+                           fastaUtrRatesChannel,
+                           fastaReadPosChannel,
+                           fastaUtrPosChannel
+
+          script:
+          """
+          gunzip -c ${fasta} > ref.fa
+          """
+    }
+    Channel
+        .fromPath( params.fasta,  checkIfExists: true)
+        .into { fastaMapChannel ;
+                fastaSnpChannel ;
+                fastaCountChannel ;
+                fastaRatesChannel ;
+                fastaUtrRatesChannel ;
+                fastaReadPosChannel ;
+                fastaUtrPosChannel }
+  } else {
+    Channel
+        .fromPath( params.fasta,  checkIfExists: true)
+        .into { fastaMapChannel ;
+                fastaSnpChannel ;
+                fastaCountChannel ;
+                fastaRatesChannel ;
+                fastaUtrRatesChannel ;
+                fastaReadPosChannel ;
+                fastaUtrPosChannel }
+  }
 }
 
 if (!params.bed) {
@@ -119,7 +155,7 @@ if (!params.bed) {
         """
         gtf2bed.py $gtf | sort -k1,1 -k2,2n > ${gtf.baseName}.3utr.bed
         """
-    }
+  }
 } else {
   Channel
         .fromPath(params.bed, checkIfExists: true)
@@ -421,25 +457,14 @@ if (params.skipTrimming) {
      !params.vcf && !params.quantseq
 
      script:
-     if (filename.endsWith(".gz")) {
-       """
-       slamdunk snp -o snp \
-          -r <(zcat ${fasta}) \
-          -c ${params.min_coverage} \
-          -f ${params.var_fraction} \
-          -t ${task.cpus} \
-          ${filter[0]}
-       """
-     } else {
-       """
-       slamdunk snp -o snp \
-          -r ${fasta} \
-          -c ${params.min_coverage} \
-          -f ${params.var_fraction} \
-          -t ${task.cpus} \
-          ${filter[0]}
-       """
-     }
+     """
+     slamdunk snp -o snp \
+        -r ${fasta} \
+        -c ${params.min_coverage} \
+        -f ${params.var_fraction} \
+        -t ${task.cpus} \
+        ${filter[0]}
+     """
  }
 
 vcfComb = slamdunkSnp.mix(vcfCombineChannel)
