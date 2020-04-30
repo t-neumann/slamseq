@@ -85,7 +85,7 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
 if (params.fasta) {
   Channel
-      .fromPath( params.fasta,  checkIfExists: true, decompress: true)
+      .fromPath( params.fasta,  checkIfExists: true)
       .into { fastaMapChannel ;
               fastaSnpChannel ;
               fastaCountChannel ;
@@ -421,14 +421,25 @@ if (params.skipTrimming) {
      !params.vcf && !params.quantseq
 
      script:
-     """
-     slamdunk snp -o snp \
-        -r ${fasta} \
-        -c ${params.min_coverage} \
-        -f ${params.var_fraction} \
-        -t ${task.cpus} \
-        ${filter[0]}
-     """
+     if (filename.endsWith(".gz")) {
+       """
+       slamdunk snp -o snp \
+          -r <(zcat ${fasta}) \
+          -c ${params.min_coverage} \
+          -f ${params.var_fraction} \
+          -t ${task.cpus} \
+          ${filter[0]}
+       """
+     } else {
+       """
+       slamdunk snp -o snp \
+          -r ${fasta} \
+          -c ${params.min_coverage} \
+          -f ${params.var_fraction} \
+          -t ${task.cpus} \
+          ${filter[0]}
+       """
+     }
  }
 
 vcfComb = slamdunkSnp.mix(vcfCombineChannel)
