@@ -85,7 +85,7 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
 if (params.fasta) {
   Channel
-      .fromPath( params.fasta,  checkIfExists: true)
+      .fromPath( params.fasta,  checkIfExists: true, decompress: true)
       .into { fastaMapChannel ;
               fastaSnpChannel ;
               fastaCountChannel ;
