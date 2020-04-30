@@ -109,15 +109,6 @@ if (params.fasta) {
           gunzip -c ${fasta} > ref.fa
           """
     }
-    Channel
-        .fromPath( params.fasta,  checkIfExists: true)
-        .into { fastaMapChannel ;
-                fastaSnpChannel ;
-                fastaCountChannel ;
-                fastaRatesChannel ;
-                fastaUtrRatesChannel ;
-                fastaReadPosChannel ;
-                fastaUtrPosChannel }
   } else {
     Channel
         .fromPath( params.fasta,  checkIfExists: true)
