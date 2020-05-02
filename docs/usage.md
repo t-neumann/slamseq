@@ -64,8 +64,6 @@ It is recommended to limit the Nextflow Java virtual machines memory. We recomme
 NXF_OPTS='-Xms1g -Xmx4g'
 ```
 
-<!-- TODO nf-core: Document required command line parameters to run the pipeline-->
-
 ## Running the pipeline
 
 The typical command for running the pipeline is as follows:
@@ -131,8 +129,6 @@ If `-profile` is not specified, the pipeline will run locally and expect all sof
 * `test`
   * A profile with a complete configuration for automated testing
   * Includes links to test data so needs no other parameters
-
-<!-- TODO nf-core: Document required command line parameters -->
 
 ### `--input`
 
@@ -237,8 +233,6 @@ Note that you can use the same configuration setup to save sets of reference fil
 
 The syntax for this reference configuration is as follows:
 
-<!-- TODO nf-core: Update reference genome example according to what is needed -->
-
 ```nextflow
 params {
   genomes {
@@ -250,8 +244,6 @@ params {
   }
 }
 ```
-
-<!-- TODO nf-core: Describe reference path flags -->
 
 ### `--fasta`
 
@@ -409,8 +401,6 @@ Booelan flag to skip trimming with [`Trim Galore!`](https://www.bioinformatics.b
 Booelan flag to skip differential transcriptional output anaysis with [DESeq2](https://doi.org/10.1186/s13059-014-0550-8).
 
 ## Other command line parameters
-
-<!-- TODO nf-core: Describe any other command line flags here -->
 
 ### `--outdir`
 

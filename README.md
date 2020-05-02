@@ -31,8 +31,6 @@ nextflow run nf-core/slamseq -profile test,<docker/singularity/conda/institute>
 
 iv. Start running your own analysis!
 
-<!-- TODO nf-core: Update the default command above used to run the pipeline -->
-
 ```bash
 nextflow run nf-core/slamseq -profile <docker/singularity/conda/institute> --input design.tsv --genome GRCh38
 ```
@@ -51,8 +49,6 @@ The nf-core/slamseq pipeline comes with documentation about the pipeline, found 
 3. [Running the pipeline](docs/usage.md)
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](https://nf-co.re/usage/troubleshooting)
-
-<!-- TODO nf-core: Add a brief overview of what the pipeline does and how it works -->
 
 ## Credits
 
