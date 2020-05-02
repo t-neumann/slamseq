@@ -308,7 +308,8 @@ process checkDesign {
     file (design) from checkChannel
 
     output:
-    file "nfcore_slamseq_design.txt" into deseq2ConditionChannel,
+    file "nfcore_slamseq_design.txt" into rawFileChannel,
+                                          deseq2ConditionChannel,
                                           splitChannel,
                                           vcfSampleChannel
 
@@ -318,11 +319,16 @@ process checkDesign {
     """
 }
 
+rawFileChannel
+   .splitCsv( header: true, sep: '\t' )
+   .map { row -> tuple(row, file(row.reads, checkIfExists: true) ) }
+   .set { rawFiles }
+
 splitChannel
    .splitCsv( header: true, sep: '\t' )
-   .into { rawFiles ; conditionDeconvolution }
+   .set { conditionDeconvolution }
 
-  vcfSampleChannel
+vcfSampleChannel
    .splitCsv( header: true, sep: '\t' )
    .map{it ->
        return it.name
@@ -347,7 +353,7 @@ if (params.skipTrimming) {
        tag { parameters.name }
 
        input:
-       val(parameters) from rawFiles
+       val(parameters), file(reads) from rawFiles
 
        output:
        set val(parameters), file("TrimGalore/${parameters.name}.fastq.gz") into trimmedFiles
@@ -357,7 +363,7 @@ if (params.skipTrimming) {
        script:
        """
        mkdir -p TrimGalore
-       trim_galore ${parameters.reads} --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
+       trim_galore ${reads} --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
        mv TrimGalore/*.fq.gz TrimGalore/${parameters.name}.fastq.gz
        """
   }
