@@ -353,7 +353,7 @@ if (params.skipTrimming) {
        tag { parameters.name }
 
        input:
-       val(parameters), file(reads) from rawFiles
+       set val(parameters), file(reads) from rawFiles
 
        output:
        set val(parameters), file("TrimGalore/${parameters.name}.fastq.gz") into trimmedFiles
