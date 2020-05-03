@@ -127,10 +127,10 @@ if (params.fasta) {
   exit 1, "Fasta file not specified!"
 }
 
+if (!params.bed && !params.genome) exit 1, "Bed file not specified!"
+
 if (!params.bed) {
 	gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
-
-  if (!gtf) exit 1, "Bed file not specified!"
 
   Channel
         .fromPath(gtf, checkIfExists: true)
