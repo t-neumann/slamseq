@@ -6,8 +6,8 @@ import re
 regexes = {
     'nf-core/slamseq': ['v_pipeline.txt', r"(\S+)"],
     'Nextflow': ['v_nextflow.txt', r"(\S+)"],
-    'TrimGalore': ['v_trimgalore.txt', r"(\S+)"],
-    'Slamdunk': ['v_slamdunk.txt', r"(\S+)"],
+    'TrimGalore': ['v_trimgalore.txt', r"version (\S+)"],
+    'Slamdunk': ['v_slamdunk.txt', r"slamdunk (\S+)"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()
