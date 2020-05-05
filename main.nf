@@ -81,6 +81,10 @@ if (params.genomes && params.genome && !params.genomes.containsKey(params.genome
 // Configurable reference genomes
 //
 //
+
+// Validate input
+if (!params.input) exit 1, "Input design file not specified!"
+
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
 if (params.fasta) {
   if (params.fasta.endsWith(".gz")) {
@@ -119,7 +123,11 @@ if (params.fasta) {
                 fastaReadPosChannel ;
                 fastaUtrPosChannel }
   }
+} else {
+  exit 1, "Fasta file not specified!"
 }
+
+if (!params.bed && !params.genome) exit 1, "Bed file not specified!"
 
 if (!params.bed) {
 	gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false

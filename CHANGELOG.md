@@ -13,4 +13,12 @@ Initial release of nf-core/slamseq, created with the [nf-core](http://nf-co.re/)
 
 ### `Dependencies`
 
+* trim-galore v0.6.5
+* multiqc v1.8
+* slamdunk v0.4.3
+* r-gridextra v2.3
+* r-ggrepel v0.8.2
+* bioconductor-deseq2 v1.22.1
+* r-kernsmooth v2.23_16
+
 ### `Deprecated`

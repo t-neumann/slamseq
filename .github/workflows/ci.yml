@@ -22,7 +22,7 @@ jobs:
       - name: Pull docker image
         run: |
           docker pull nfcore/slamseq:dev
-          docker tag nfcore/slamseq:dev nfcore/slamseq:dev
+          docker tag nfcore/slamseq:dev nfcore/slamseq:1.0.0
       - name: Run pipeline with test data
         run: |
           # TODO nf-core: You can customise CI pipeline run tests as required

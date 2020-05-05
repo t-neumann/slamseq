@@ -14,7 +14,7 @@
   > Sedlazeck FJ, Rescheneder P, von Haeseler A: NextGenMap: fast and accurate read mapping in highly polymorphic genomes. Bioinformatics. 2013 August 23; 29,1. doi: 10.1093/bioinformatics/btt468. PubMed PMID: 23975764.
 
 * [Varscan2](https://www.ncbi.nlm.nih.gov/pubmed/22300766)
-  > Koboldt DC, Zhang Q, Larson DE, Shen D, McLellan MD, Lin L, Miller CA, Mardis ER, Ding L, Wilson RK: VarScan 2: somatic mutation and copy number alteration discovery in cancer by exome sequencing. Genome Research. 2012 February 2. doi: https://doi.org/10.1101/gr.129684.111. PubMed PMID: 22300766.
+  > Koboldt DC, Zhang Q, Larson DE, Shen D, McLellan MD, Lin L, Miller CA, Mardis ER, Ding L, Wilson RK: VarScan 2: somatic mutation and copy number alteration discovery in cancer by exome sequencing. Genome Research. 2012 February 2. doi: 10.1101/gr.129684.111. PubMed PMID: 22300766.
 
 * [SAMtools](https://www.ncbi.nlm.nih.gov/pubmed/19505943/)
   > Li H, Handsaker B, Wysoker A, Fennell T, Ruan J, Homer N, Marth G, Abecasis G, Durbin R; 1000 Genome Project Data Processing Subgroup. The Sequence Alignment/Map format and SAMtools. Bioinformatics. 2009 Aug 15;25(16):2078-9. doi: 10.1093/bioinformatics/btp352. Epub 2009 Jun 8. PubMed PMID: 19505943; PubMed Central PMCID: PMC2723002.

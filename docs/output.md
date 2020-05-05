@@ -67,8 +67,8 @@ MultiQC reports the percentage of bases removed by TrimGalore in the _General St
   * A tab-delimited text file with the DESeq2 results containing the following columns:
     * `gene_name`: Name of the gene as in `--bed` file
     * `log2FC_deseq2`: The log2 fold-change of `condition` vs `control`
-    *	`padj`: Adjusted p-value for a given gene
-    *	`avg.RPM.ctrl`: Average RPM of the control samples for a given gene
+    * `padj`: Adjusted p-value for a given gene
+    * `avg.RPM.ctrl`: Average RPM of the control samples for a given gene
 * `MAPlot.pdf`
   * [MA-plot](https://en.wikipedia.org/wiki/MA_plot) of the average RPM in control samples vs log2 fold-changes coloring significant genes exceed the p-value threshold defined in `--pvalue`.
 
