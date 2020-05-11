@@ -43,11 +43,11 @@ def helpMessage() {
       --min_coverage [int]            Minimimum coverage to call a SNP.
       --var_fraction [float]          Minimimum variant fraction to call a SNP.
       --conversions [int]             Minimum number of conversions to count a read as converted read
-      --baseQuality [int]             Minimum base quality to filter conversions
-      --readLength [int]              Read length of processed reads
+      --base_quality [int]             Minimum base quality to filter conversions
+      --read_length [int]              Read length of processed reads
       --pvalue [float]                P-value cutoff for MA plot
-      --skipTrimming [bool]           Skip trimming step
-      --skipDeseq2 [bool]             Skip trimming step
+      --skip_trimming [bool]           Skip trimming step
+      --skip_deseq2 [bool]             Skip trimming step
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -165,7 +165,7 @@ if (!params.bed) {
 }
 
 // Read length must be supplied
-if ( !params.readLength ) exit 1, "Read length must be supplied."
+if ( !params.read_length ) exit 1, "Read length must be supplied."
 
 if ( params.mapping ) {
   Channel
@@ -231,11 +231,11 @@ summary['Endtoend']         = params.endtoend
 summary['Minimum coverage'] = params.min_coverage
 summary['Variant fraction'] = params.var_fraction
 summary['Conversions']      = params.conversions
-summary['BaseQuality']      = params.baseQuality
-summary['ReadLength']       = params.readLength
+summary['base_quality']     = params.base_quality
+summary['read_length']      = params.read_length
 summary['P-value']          = params.pvalue
-summary['Skip Trimming']    = params.skipTrimming
-summary['Skip DESeq2']      = params.skipDeseq2
+summary['Skip Trimming']    = params.skip_trimming
+summary['Skip DESeq2']      = params.skip_deseq2
 summary['Max Resources']    = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
 if (workflow.containerEngine) summary['Container'] = "$workflow.containerEngine - $workflow.container"
 summary['Output dir']       = params.outdir
@@ -344,7 +344,7 @@ vcfSampleChannel
 /*
  * STEP 1 - TrimGalore!
  */
-if (params.skipTrimming) {
+if (params.skip_trimming) {
     rawFiles
        .map{it ->
         return tuple(it, file(it.reads))
@@ -407,6 +407,8 @@ if (params.skipTrimming) {
   * STEP 3 - Filter
   */
   process filter {
+
+    label 'slamdunk_process'
 
     publishDir path: "${params.outdir}/slamdunk/bam", mode: 'copy',
                overwrite: 'true', pattern: "filter/*bam*",
@@ -485,6 +487,8 @@ vcfComb = slamdunkSnp.mix(vcfCombineChannel)
 */
 process count {
 
+  label 'slamdunk_process'
+
   publishDir path: "${params.outdir}/slamdunk/count/utrs", mode: 'copy',
              overwrite: 'true', pattern: "count/*.tsv",
              saveAs: { it.endsWith(".tsv") ? file(it).getName() : it  }
@@ -510,9 +514,9 @@ process count {
        -r ${fasta} \
        ${snpMode} \
        -b ${bed} \
-       -l ${params.readLength} \
+       -l ${params.read_length} \
        -c ${params.conversions} \
-       -q ${params.baseQuality} \
+       -q ${params.base_quality} \
        -t ${task.cpus} \
        ${filter[0]}
     """
@@ -522,6 +526,8 @@ process count {
 * STEP 6 - Collapse
 */
 process collapse {
+
+    label 'slamdunk_process'
 
     publishDir path: "${params.outdir}/slamdunk/count/genes", mode: 'copy',
                overwrite: 'true', pattern: "collapse/*.csv",
@@ -552,6 +558,8 @@ process collapse {
 */
 process rates {
 
+    label 'slamdunk_process'
+
     tag { name }
 
     input:
@@ -568,7 +576,7 @@ process rates {
     """
     alleyoop rates -o rates \
        -r ${fasta} \
-       -mq ${params.baseQuality} \
+       -mq ${params.base_quality} \
        -t ${task.cpus} \
        ${filter[0]}
     """
@@ -578,6 +586,8 @@ process rates {
 * STEP 8 - utrrates
 */
 process utrrates {
+
+    label 'slamdunk_process'
 
     tag { name }
 
@@ -596,9 +606,9 @@ process utrrates {
     """
     alleyoop utrrates -o utrrates \
        -r ${fasta} \
-       -mq ${params.baseQuality} \
+       -mq ${params.base_quality} \
        -b ${bed} \
-       -l ${params.readLength} \
+       -l ${params.read_length} \
        -t ${task.cpus} \
        ${filter[0]}
     """
@@ -608,6 +618,8 @@ process utrrates {
 * STEP 9 - tcperreadpos
 */
 process tcperreadpos {
+
+    label 'slamdunk_process'
 
     tag { name }
 
@@ -627,8 +639,8 @@ process tcperreadpos {
     alleyoop tcperreadpos -o tcperreadpos \
        -r ${fasta} \
        ${snpMode} \
-       -mq ${params.baseQuality} \
-       -l ${params.readLength} \
+       -mq ${params.base_quality} \
+       -l ${params.read_length} \
        -t ${task.cpus} \
        ${filter[0]}
     """
@@ -638,6 +650,8 @@ process tcperreadpos {
 * STEP 10 - tcperutrpos
 */
 process tcperutrpos {
+
+    label 'slamdunk_process'
 
     tag { name }
 
@@ -659,8 +673,8 @@ process tcperutrpos {
        -r ${fasta} \
        -b ${bed} \
        ${snpMode} \
-       -mq ${params.baseQuality} \
-       -l ${params.readLength} \
+       -mq ${params.base_quality} \
+       -l ${params.read_length} \
        -t ${task.cpus} \
        ${filter[0]}
     """
@@ -720,6 +734,8 @@ conditionDeconvolution
  */
 process deseq2 {
 
+    label 'slamdunk_process'
+
     publishDir path: "${params.outdir}/deseq2", mode: 'copy', overwrite: 'true'
 
     input:
@@ -730,7 +746,7 @@ process deseq2 {
     file("${group}") optional true into deseq2out
 
     when:
-    !params.quantseq && !params.skipDeseq2
+    !params.quantseq && !params.skip_deseq2
 
     script:
 
