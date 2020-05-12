@@ -144,6 +144,30 @@ The `group` identifier demarks a given celltype or patient in which an experimen
 
 In the design below there a triplicate samples for two groups (`K562` and `OCIAML3`) with two conditions each (one control condition `DMSO` and two treatment conditions `NVP.lo` and `NVP.hi`).
 
+| group   | condition | control | reads |
+|---------|-----------|---------|-------|
+| MOLM-13 | DMSO   | 1 | MOLM-13_dmso_1.fq.gz   |
+| MOLM-13 | DMSO   | 1 | MOLM-13_dmso_2.fq.gz   |
+| MOLM-13 | DMSO   | 1 | MOLM-13_dmso_3.fq.gz   |
+| MOLM-13 | NVP_hi | 0 | MOLM-13_nvp.hi_1.fq.gz |
+| MOLM-13 | NVP_hi | 0 | MOLM-13_nvp.hi_2.fq.gz |
+| MOLM-13 | NVP_hi | 0 | MOLM-13_nvp.hi_3.fq.gz |
+| MOLM-13 | NVP_lo | 0 | MOLM-13_nvp.lo_1.fq.gz |
+| MOLM-13 | NVP_lo | 0 | MOLM-13_nvp.lo_2.fq.gz |
+| MOLM-13 | NVP_lo | 0 | MOLM-13_nvp.lo_3.fq.gz |
+| OCIAML3 | DMSO   | 1 | OCIAML3_dmso_1.fq.gz   |
+| OCIAML3 | DMSO   | 1 | OCIAML3_dmso_2.fq.gz   |
+| OCIAML3 | DMSO   | 1 | OCIAML3_dmso_3.fq.gz   |
+| OCIAML3 | NVP_hi | 0 | OCIAML3_nvp.hi_1.fq.gz |
+| OCIAML3 | NVP_hi | 0 | OCIAML3_nvp.hi_2.fq.gz |
+| OCIAML3 | NVP_hi | 0 | OCIAML3_nvp.hi_3.fq.gz |
+| OCIAML3 | NVP_lo | 0 | OCIAML3_nvp.lo_1.fq.gz |
+| OCIAML3 | NVP_lo | 0 | OCIAML3_nvp.lo_2.fq.gz |
+| OCIAML3 | NVP_lo | 0 | OCIAML3_nvp.lo_3.fq.gz |
+
+<details>
+<summary>Raw TSV:</summary>
+
 ```bash
 group  condition control reads
 MOLM-13 DMSO  1 MOLM-13_dmso_1.fq.gz
@@ -165,6 +189,8 @@ OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_1.fq.gz
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_2.fq.gz
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_3.fq.gz
 ```
+
+</details>
 
 #### Optional columns
 
