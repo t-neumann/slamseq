@@ -361,15 +361,16 @@ if (params.skip_trimming) {
        set val(meta), file(reads) from rawFiles
 
        output:
-       set val(meta), file("TrimGalore/${meta.name}.fastq.gz") into trimmedFiles
+       set val(meta), file("TrimGalore/${meta.name}.fq.gz") into trimmedFiles
        file ("TrimGalore/*.txt") into trimgaloreQC
        file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
 
        script:
        """
        mkdir -p TrimGalore
-       trim_galore ${reads} --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
-       mv TrimGalore/*.fq.gz TrimGalore/${meta.name}.fastq.gz
+       trim_galore ${reads} --stringency 3 --fastqc \
+                            --cores ${task.cpus} --output_dir TrimGalore \
+                            --basename ${meta.name}
        """
   }
 }
