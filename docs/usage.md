@@ -168,6 +168,7 @@ In the design below there a triplicate samples for two groups (`K562` and `OCIAM
 
 <details>
 <summary>Raw TSV:</summary>
+
 ```bash
 group  condition control reads
 MOLM-13 DMSO  1 MOLM-13_dmso_1.fq.gz
@@ -189,6 +190,7 @@ OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_1.fq.gz
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_2.fq.gz
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_3.fq.gz
 ```
+
 </details>
 
 #### Optional columns
@@ -222,6 +224,7 @@ A full design file using the above example may look something like the one below
 
 <details>
 <summary>Raw TSV:</summary>
+
 ```bash
 group  condition control reads name  type  time
 MOLM-13 DMSO  1 MOLM-13_dmso_1.fq.gz  M13_DMSO_1  pulse 60
@@ -243,6 +246,7 @@ OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_1.fq.gz  O3_NVP_LO_1 pulse 60
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_2.fq.gz  O3_NVP_LO_2 pulse 60
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_3.fq.gz  O3_NVP_LO_3 pulse 60
 ```
+
 </details>
 
 | Column      | Description                                                                                                                                      |
