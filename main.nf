@@ -297,8 +297,11 @@ process get_software_versions {
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
+    fastqc --version > v_fastqc.txt
     trim_galore --version > v_trimgalore.txt
     slamdunk --version > v_slamdunk.txt
+    echo \$(R --version 2>&1) > v_R.txt
+    R -e 'packageVersion("DESeq2")' | grep "\\[1\\]" > v_DESeq2.txt
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
@@ -361,7 +364,7 @@ if (params.skip_trimming) {
        set val(meta), file(reads) from rawFiles
 
        output:
-       set val(meta), file("TrimGalore/${meta.name}.fq.gz") into trimmedFiles
+       set val(meta), file("TrimGalore/${meta.name}_trimmed.fq.gz") into trimmedFiles
        file ("TrimGalore/*.txt") into trimgaloreQC
        file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
 

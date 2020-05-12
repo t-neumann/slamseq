@@ -6,15 +6,21 @@ import re
 regexes = {
     'nf-core/slamseq': ['v_pipeline.txt', r"(\S+)"],
     'Nextflow': ['v_nextflow.txt', r"(\S+)"],
+    'FastQC': ['v_fastqc.txt', r"FastQC v(\S+)"],
     'TrimGalore': ['v_trimgalore.txt', r"version (\S+)"],
     'Slamdunk': ['v_slamdunk.txt', r"slamdunk (\S+)"],
+    'R': ['v_R.txt', r"R version (\S+)"],
+    'DESeq2': ['v_DESeq2.txt', r"[1] '(\S+)'"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()
 results['nf-core/slamseq'] = '<span style="color:#999999;\">N/A</span>'
 results['Nextflow'] = '<span style="color:#999999;\">N/A</span>'
+results['FastQC'] = '<span style="color:#999999;\">N/A</span>'
 results['TrimGalore'] = '<span style="color:#999999;\">N/A</span>'
 results['Slamdunk'] = '<span style="color:#999999;\">N/A</span>'
+results['R'] = '<span style="color:#999999;\">N/A</span>'
+results['DESeq2'] = '<span style="color:#999999;\">N/A</span>'
 results['MultiQC'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
