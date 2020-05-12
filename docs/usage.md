@@ -33,10 +33,11 @@
   * [`--min_coverage`](#--min_coverage)
   * [`--var_fraction`](#--var_fraction)
   * [`--conversions`](#--conversions)
-  * [`--baseQuality`](#--baseQuality)
-  * [`--readLength`](#--readLength)
+  * [`--base_quality`](#--base_quality)
+  * [`--read_length`](#--read_length)
   * [`--pvalue`](#--pvalue)
-  * [`--skipTrimming`](#--skipTrimming)
+  * [`--skip_trimming`](#--skip_trimming)
+  * [`--skip_deseq2`](#--skip_deseq2)
 * [Other command line parameters](#other-command-line-parameters)
   * [`--outdir`](#--outdir)
   * [`--email`](#--email)
@@ -167,7 +168,6 @@ In the design below there a triplicate samples for two groups (`K562` and `OCIAM
 
 <details>
 <summary>Raw TSV:</summary>
-
 ```bash
 group  condition control reads
 MOLM-13 DMSO  1 MOLM-13_dmso_1.fq.gz
@@ -189,7 +189,6 @@ OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_1.fq.gz
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_2.fq.gz
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_3.fq.gz
 ```
-
 </details>
 
 #### Optional columns
@@ -200,6 +199,29 @@ If those columns are left empty or in the minimal design above, the `type` colum
 
 A full design file using the above example may look something like the one below:
 
+| group   | condition | control | reads | name | type | time |
+|---------|-----------|---------|-------|------|------|------|
+| MOLM-13 | DMSO   | 1 | MOLM-13_dmso_1.fq.gz   | M13_DMSO_1   | pulse | 60 |
+| MOLM-13 | DMSO   | 1 | MOLM-13_dmso_2.fq.gz   | M13_DMSO_2   | pulse | 60 |
+| MOLM-13 | DMSO   | 1 | MOLM-13_dmso_3.fq.gz   | M13_DMSO_3   | pulse | 60 |
+| MOLM-13 | NVP_hi | 0 | MOLM-13_nvp.hi_1.fq.gz | M13_NVP_HI_1 | pulse | 60 |
+| MOLM-13 | NVP_hi | 0 | MOLM-13_nvp.hi_2.fq.gz | M13_NVP_HI_2 | pulse | 60 |
+| MOLM-13 | NVP_hi | 0 | MOLM-13_nvp.hi_3.fq.gz | M13_NVP_HI_3 | pulse | 60 |
+| MOLM-13 | NVP_lo | 0 | MOLM-13_nvp.lo_1.fq.gz | M13_NVP_LO_1 | pulse | 60 |
+| MOLM-13 | NVP_lo | 0 | MOLM-13_nvp.lo_2.fq.gz | M13_NVP_LO_2 | pulse | 60 |
+| MOLM-13 | NVP_lo | 0 | MOLM-13_nvp.lo_3.fq.gz | M13_NVP_LO_3 | pulse | 60 |
+| OCIAML3 | DMSO   | 1 | OCIAML3_dmso_1.fq.gz   | O3_DMSO_1    | pulse | 60 |
+| OCIAML3 | DMSO   | 1 | OCIAML3_dmso_2.fq.gz   | O3_DMSO_2    | pulse | 60 |
+| OCIAML3 | DMSO   | 1 | OCIAML3_dmso_3.fq.gz   | O3_DMSO_3    | pulse | 60 |
+| OCIAML3 | NVP_hi | 0 | OCIAML3_nvp.hi_1.fq.gz | O3_NVP_HI_1  | pulse | 60 |
+| OCIAML3 | NVP_hi | 0 | OCIAML3_nvp.hi_2.fq.gz | O3_NVP_HI_2  | pulse | 60 |
+| OCIAML3 | NVP_hi | 0 | OCIAML3_nvp.hi_3.fq.gz | O3_NVP_HI_3  | pulse | 60 |
+| OCIAML3 | NVP_lo | 0 | OCIAML3_nvp.lo_1.fq.gz | O3_NVP_LO_1  | pulse | 60 |
+| OCIAML3 | NVP_lo | 0 | OCIAML3_nvp.lo_2.fq.gz | O3_NVP_LO_2  | pulse | 60 |
+| OCIAML3 | NVP_lo | 0 | OCIAML3_nvp.lo_3.fq.gz | O3_NVP_LO_3  | pulse | 60 |
+
+<details>
+<summary>Raw TSV:</summary>
 ```bash
 group  condition control reads name  type  time
 MOLM-13 DMSO  1 MOLM-13_dmso_1.fq.gz  M13_DMSO_1  pulse 60
@@ -221,6 +243,7 @@ OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_1.fq.gz  O3_NVP_LO_1 pulse 60
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_2.fq.gz  O3_NVP_LO_2 pulse 60
 OCIAML3 NVP_lo  0 OCIAML3_nvp.lo_3.fq.gz  O3_NVP_LO_3 pulse 60
 ```
+</details>
 
 | Column      | Description                                                                                                                                      |
 |-------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -394,20 +417,20 @@ Minimum number of T>C conversions in a read to call it a T>C read.
 --conversions '[Number of conversions to call a T>C read]'
 ```
 
-### `--baseQuality`
+### `--base_quality`
 
 Minimum base quality to call a T>C conversion as integer.
 
 ```bash
---baseQuality '[Minimum base quality for a T>C conversion]'
+--base_quality '[Minimum base quality for a T>C conversion]'
 ```
 
-### `--readLength`
+### `--read_length`
 
 Read length of your samples as integer.
 
 ```bash
---readLength '[Read length of your samples]'
+--read_length '[Read length of your samples]'
 ```
 
 ### `--pvalue`
@@ -418,11 +441,11 @@ P-value cutoff for the MA-plots.
 --pvalue '[P-value cutoff]'
 ```
 
-### `--skipTrimming`
+### `--skip_trimming`
 
 Booelan flag to skip trimming with [`Trim Galore!`](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/).
 
-### `--skipDeseq2`
+### `--skip_deseq2`
 
 Booelan flag to skip differential transcriptional output anaysis with [DESeq2](https://doi.org/10.1186/s13059-014-0550-8).
 
