@@ -10,7 +10,7 @@ regexes = {
     'TrimGalore': ['v_trimgalore.txt', r"version (\S+)"],
     'Slamdunk': ['v_slamdunk.txt', r"slamdunk (\S+)"],
     'R': ['v_R.txt', r"R version (\S+)"],
-    'DESeq2': ['v_DESeq2.txt', r"[1] '(\S+)'"],
+    'DESeq2': ['v_DESeq2.txt', r"\[1\] .{1}(\S+).{1}"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
 results = OrderedDict()
