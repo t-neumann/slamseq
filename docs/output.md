@@ -83,6 +83,24 @@ The same plots also exist for UTR positions.
 
 [DESeq2](https://doi.org/10.1186/s13059-014-0550-8) is used to call differential transcriptional output between conditions to infer direct transcriptional targets. The nfcore/slamseq pipeline uses the total read counts to calculate the sizeFactors and then proceeds with the converted read counts for the remaining steps of the DESeq2 workflow.
 
+DESeq2 produces several plots, the most important ones being briefly described here:
+
+*PCA*:
+
+This PCA plot is basically the function `plotPCA` run on the total-read normalized T>C read counts.
+
+As with every PCA plot, your replicates should cluster together and your conditions apart.
+
+![MultiQC - DESeq2 PCA plot](images/deseq2_PCA.png)
+
+*MA plot*:
+
+We produce several versions of MA plots for each contrast, the most important being a density plot for the log2-fold change distribution along the baseline expression levels in the control samples, as well as MA plots where the significant hits (specifiable by the `--pvalue` parameter) are highlighted and the top 20 gene names are listed. Find below a representative example of a density and highlighted MA-plot:
+
+![MultiQC - DESeq2 MA density plot](images/deseq2_MA_density.png)
+
+![MultiQC - DESeq2 MA highlight plot](images/deseq2_MA_genes.png)
+
 **Output directory: `results/deseq2`**
 
 * Directly in the output directory you will find one subfolder per `group`.
