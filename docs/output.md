@@ -36,6 +36,38 @@ MultiQC reports the percentage of bases removed by TrimGalore in the _General St
 
 [Slamdunk](https://github.com/t-neumann/slamdunk) is a software to map and quantify nucleotide-conversion containing read sets with ultra-high sensitivity. The nfcore/slamseq pipeline uses Slamdunk for mapping SLAMseq datasets, calculating QC metrics and extracting both total and converted read counts for differential transcriptional output analysis.
 
+It produces several QC plots summarised in a MultiQC report, the most important ones being briefly described here:
+
+*PCA*:
+
+This PCA plot is calculated on the T>C converted reads from newly synthesized transcripts. They should best capture immediate changes within our samples, even when there can be no steady-state changes detected.
+
+As with every PCA plot, your replicates should cluster together and your conditions apart.
+
+![MultiQC - Slamdunk PCA plot](images/slamdunk_PCA.png)
+
+*Rates*:
+
+This plot shows the individual base substitutions in your reads across the entire read set. For SLAMseq datasets you should see an excess of T>C conversions with increasing labelling times. The plot below shows samples with mock treatment (DMSO) and transcriptional inhibition with a CDK9-inhibitor (NVP) where transcription is blocked which is reflected in the loss of the T>C conversion excess.
+
+![MultiQC - Slamdunk rates plot](images/slamdunk_rates.png)
+
+*UTR rates*:
+
+This plot shows the median base substitutions in the annotated UTRs across the entire read set. For SLAMseq datasets you should only observe median T>C conversions > 0, the remaining substitutions should remain in background. The plot below shows the UTR rates for the same samples as above: samples with mock treatment (DMSO) and transcriptional inhibition with a CDK9-inhibitor (NVP) where transcription is blocked which is reflected in the loss of the T>C conversion excess.
+
+![MultiQC - Slamdunk UTR rates plot](images/slamdunk_utrrates.png)
+
+*Conversions per read position*:
+
+This plot shows the individual base substitutions across read positions across the entire read set. For SLAMseq datasets the background conversion levels should be consistent across all base conversions and read positions, for T>C conversions they should be stratified by labelling time. The plots below first show the background conversions and then as contrast the T>C conversions for th same samples as above: samples with mock treatment (DMSO) and transcriptional inhibition with a CDK9-inhibitor (NVP) where transcription is blocked which is reflected in the loss of the T>C conversion excess.
+
+![MultiQC - Slamdunk background conversions per read position plot](images/slamdunk_nontcperreadpos.png)
+
+![MultiQC - Slamdunk T>C conversions per read position plot](images/slamdunk_tcperreadpos.png)
+
+The same plots also exist for UTR positions.
+
 **Output directory: `results/slamdunk`**
 
 * `bam/*.{bam,bai}`
