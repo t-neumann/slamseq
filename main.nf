@@ -297,8 +297,11 @@ process get_software_versions {
     """
     echo $workflow.manifest.version > v_pipeline.txt
     echo $workflow.nextflow.version > v_nextflow.txt
+    fastqc --version > v_fastqc.txt
     trim_galore --version > v_trimgalore.txt
     slamdunk --version > v_slamdunk.txt
+    echo \$(R --version 2>&1) > v_R.txt
+    R -e 'packageVersion("DESeq2")' | grep "\\[1\\]" > v_DESeq2.txt
     multiqc --version > v_multiqc.txt
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
@@ -355,21 +358,22 @@ if (params.skip_trimming) {
 } else {
   process trim {
 
-       tag { parameters.name }
+       tag { meta.name }
 
        input:
-       set val(parameters), file(reads) from rawFiles
+       set val(meta), file(reads) from rawFiles
 
        output:
-       set val(parameters), file("TrimGalore/${parameters.name}.fastq.gz") into trimmedFiles
+       set val(meta), file("TrimGalore/${meta.name}_trimmed.fq.gz") into trimmedFiles
        file ("TrimGalore/*.txt") into trimgaloreQC
        file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
 
        script:
        """
        mkdir -p TrimGalore
-       trim_galore ${reads} --stringency 3 --fastqc --cores ${task.cpus} --output_dir TrimGalore
-       mv TrimGalore/*.fq.gz TrimGalore/${parameters.name}.fastq.gz
+       trim_galore ${reads} --stringency 3 --fastqc \
+                            --cores ${task.cpus} --output_dir TrimGalore \
+                            --basename ${meta.name}
        """
   }
 }
@@ -379,14 +383,14 @@ if (params.skip_trimming) {
  */
  process map {
 
-     tag { parameters.name }
+     tag { meta.name }
 
      input:
-     set val(parameters), file(fastq) from trimmedFiles
+     set val(meta), file(fastq) from trimmedFiles
      each file(fasta) from fastaMapChannel
 
      output:
-     set val(parameters.name), file("map/*bam") into slamdunkMap
+     set val(meta.name), file("map/*bam") into slamdunkMap
 
      script:
      quantseq = params.quantseq ? "-q" : ""
@@ -395,9 +399,9 @@ if (params.skip_trimming) {
      slamdunk map -r ${fasta} -o map \
         -5 ${params.trim5} -n 100 \
         -a ${params.polyA} -t ${task.cpus} \
-        --sampleName ${parameters.name} \
-        --sampleType ${parameters.type} \
-        --sampleTime ${parameters.time} --skip-sam \
+        --sampleName ${meta.name} \
+        --sampleType ${meta.type} \
+        --sampleTime ${meta.time} --skip-sam \
         ${quantseq} ${endtoend} \
         ${fastq}
      """
@@ -432,8 +436,7 @@ if (params.skip_trimming) {
       multimappers = params.multimappers ? "-b ${bed}" : ""
 
       """
-      slamdunk filter -o filter \
-         ${multimappers} \
+      slamdunk filter -o filter ${multimappers} \
          -t ${task.cpus} \
          ${map}
       """
@@ -483,8 +486,8 @@ vcfComb = slamdunkSnp.mix(vcfCombineChannel)
             slamdunkForTcPerUtrPosChannel }
 
 /*
-* STEP 5 - Count
-*/
+ * STEP 5 - Count
+ */
 process count {
 
   label 'slamdunk_process'
@@ -523,8 +526,8 @@ process count {
 }
 
 /*
-* STEP 6 - Collapse
-*/
+ * STEP 6 - Collapse
+ */
 process collapse {
 
     label 'slamdunk_process'
@@ -554,8 +557,8 @@ process collapse {
 }
 
 /*
-* STEP 7 - rates
-*/
+ * STEP 7 - rates
+ */
 process rates {
 
     label 'slamdunk_process'
@@ -583,8 +586,8 @@ process rates {
 }
 
 /*
-* STEP 8 - utrrates
-*/
+ * STEP 8 - utrrates
+ */
 process utrrates {
 
     label 'slamdunk_process'
@@ -615,8 +618,8 @@ process utrrates {
 }
 
 /*
-* STEP 9 - tcperreadpos
-*/
+ * STEP 9 - tcperreadpos
+ */
 process tcperreadpos {
 
     label 'slamdunk_process'
@@ -647,8 +650,8 @@ process tcperreadpos {
 }
 
 /*
-* STEP 10 - tcperutrpos
-*/
+ * STEP 10 - tcperutrpos
+ */
 process tcperutrpos {
 
     label 'slamdunk_process'
@@ -694,8 +697,8 @@ slamdunkCountAlleyoop
    .set{ slamdunkCountAlleyoopCollected }
 
 /*
-* STEP 11 - Summary
-*/
+ * STEP 11 - Summary
+ */
 process summary {
 
     input:
@@ -706,15 +709,10 @@ process summary {
     file("summary*.txt") into summaryQC
 
     script:
-    if (params.quantseq) {
-      """
-      alleyoop summary -o summary.txt ./filter/*bam
-      """
-    } else {
-      """
-      alleyoop summary -o summary.txt -t ./count ./filter/*bam
-      """
-    }
+    countFolderFlag = !params.quantseq ? "-t ./count" : ""
+    """
+    alleyoop summary -o summary.txt ${countFolderFlag} ./filter/*bam
+    """
 }
 
 
@@ -789,7 +787,7 @@ process multiqc {
 }
 
 /*
- * STEP 3 - Output Description HTML
+ * STEP 14 - Output Description HTML
  */
 process output_documentation {
     publishDir "${params.outdir}/pipeline_info", mode: 'copy'
