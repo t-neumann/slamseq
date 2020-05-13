@@ -21,7 +21,6 @@ def helpMessage() {
 
     Mandatory arguments:
       --input [file]                  Tab-separated file containing information about the samples in the experiment (see docs/usage.md)
-
       -profile [str]                  Configuration profile to use. Can use multiple (comma separated)
                                       Available: conda, docker, singularity, test, awsbatch, <institute> and more
 
@@ -43,11 +42,11 @@ def helpMessage() {
       --min_coverage [int]            Minimimum coverage to call a SNP.
       --var_fraction [float]          Minimimum variant fraction to call a SNP.
       --conversions [int]             Minimum number of conversions to count a read as converted read
-      --base_quality [int]             Minimum base quality to filter conversions
-      --read_length [int]              Read length of processed reads
+      --base_quality [int]            Minimum base quality to filter conversions
+      --read_length [int]             Read length of processed reads
       --pvalue [float]                P-value cutoff for MA plot
-      --skip_trimming [bool]           Skip trimming step
-      --skip_deseq2 [bool]             Skip trimming step
+      --skip_trimming [bool]          Skip trimming step
+      --skip_deseq2 [bool]            Skip trimming step
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -87,57 +86,57 @@ if (!params.input) exit 1, "Input design file not specified!"
 
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
 if (params.fasta) {
-  if (params.fasta.endsWith(".gz")) {
-    Channel
-        .fromPath( params.fasta,  checkIfExists: true)
-        .set { fastaGunzipChannel }
+    if (params.fasta.endsWith(".gz")) {
+        Channel
+            .fromPath(params.fasta,  checkIfExists: true)
+            .set { fastaGunzipChannel }
 
-    process gunzipFasta {
-          tag "$params.fasta"
+        process gunzipFasta {
+            tag "$params.fasta"
 
-          input:
-          file fasta from fastaGunzipChannel
+            input:
+            file fasta from fastaGunzipChannel
 
-          output:
-          file "ref.fa" into fastaMapChannel,
-                           fastaSnpChannel,
-                           fastaCountChannel,
-                           fastaRatesChannel,
-                           fastaUtrRatesChannel,
-                           fastaReadPosChannel,
-                           fastaUtrPosChannel
+            output:
+            file "ref.fa" into fastaMapChannel,
+                               fastaSnpChannel,
+                               fastaCountChannel,
+                               fastaRatesChannel,
+                               fastaUtrRatesChannel,
+                               fastaReadPosChannel,
+                               fastaUtrPosChannel
 
-          script:
-          """
-          gunzip -c ${fasta} > ref.fa
-          """
+            script:
+            """
+            gunzip -c ${fasta} > ref.fa
+            """
+        }
+    } else {
+        Channel
+            .fromPath(params.fasta, checkIfExists: true)
+            .into { fastaMapChannel
+                    fastaSnpChannel
+                    fastaCountChannel
+                    fastaRatesChannel
+                    fastaUtrRatesChannel
+                    fastaReadPosChannel
+                    fastaUtrPosChannel }
     }
-  } else {
-    Channel
-        .fromPath( params.fasta,  checkIfExists: true)
-        .into { fastaMapChannel ;
-                fastaSnpChannel ;
-                fastaCountChannel ;
-                fastaRatesChannel ;
-                fastaUtrRatesChannel ;
-                fastaReadPosChannel ;
-                fastaUtrPosChannel }
-  }
 } else {
-  exit 1, "Fasta file not specified!"
+    exit 1, "Fasta file not specified!"
 }
 
 if (!params.bed && !params.genome) exit 1, "Bed file not specified!"
 
 if (!params.bed) {
-	gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
+    gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
 
-  Channel
+    Channel
         .fromPath(gtf, checkIfExists: true)
         .ifEmpty { exit 1, "GTF annotation file not found: ${gtf}" }
-        .set{ gtfChannel }
+        .set { gtfChannel }
 
-  process gtf2bed {
+    process gtf2bed {
         tag "$gtf"
 
         input:
@@ -153,36 +152,36 @@ if (!params.bed) {
         """
         gtf2bed.py $gtf | sort -k1,1 -k2,2n > ${gtf.baseName}.3utr.bed
         """
-  }
+    }
 } else {
-  Channel
+    Channel
         .fromPath(params.bed, checkIfExists: true)
         .ifEmpty { exit 1, "BED 3' UTR annotation file not found: ${params.bed}" }
-        .into { utrFilterChannel ;
-                utrCountChannel ;
-                utrratesChannel ;
+        .into { utrFilterChannel
+                utrCountChannel
+                utrratesChannel
                 utrposChannel }
 }
 
 // Read length must be supplied
-if ( !params.read_length ) exit 1, "Read length must be supplied."
+if (!params.read_length) exit 1, "Read length must be supplied."
 
-if ( params.mapping ) {
-  Channel
+if (params.mapping) {
+    Channel
         .fromPath(params.mapping, checkIfExists: true)
         .ifEmpty { exit 1, "Mapping file not found: ${params.mapping}" }
-        .set{ utrFilterChannel }
+        .set { utrFilterChannel }
 }
 
-if ( params.vcf ) {
-  Channel
+if (params.vcf) {
+    Channel
         .fromPath(params.vcf, checkIfExists: true)
         .ifEmpty { exit 1, "Vcf file not found: ${params.vcf}" }
-        .set{ vcfChannel }
+        .set { vcfChannel }
 } else {
-  Channel
+    Channel
         .empty()
-        .set{ vcfChannel }
+        .set { vcfChannel }
 }
 
 // Has the run name been specified by the user?
@@ -210,10 +209,10 @@ ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
 /*
  * Create a channel for sample list
  */
- Channel
-    .fromPath( params.input, checkIfExists: true )
+Channel
+    .fromPath(params.input, checkIfExists: true)
     .ifEmpty { exit 1, "input file not found: ${params.input}" }
-    .set{ checkChannel }
+    .set { checkChannel }
 
 // Header log info
 log.info nfcoreHeader()
