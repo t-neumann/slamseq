@@ -353,7 +353,7 @@ if (params.skip_trimming) {
     trimgaloreFastQC = Channel.empty()
 } else {
     process trim {
-        tag { meta.name }
+        tag "$meta.name"
 
         input:
         set val(meta), file(reads) from rawFiles
@@ -381,7 +381,7 @@ if (params.skip_trimming) {
  * STEP 2 - Map
  */
 process map {
-    tag { meta.name }
+    tag "$meta.name"
 
     input:
     set val(meta), file(fastq) from trimmedFiles
@@ -415,14 +415,15 @@ process map {
   * STEP 3 - Filter
   */
 process filter {
-    tag { name }
+    tag "$name"
     label 'slamdunk_process'
 
-    publishDir path: "${params.outdir}/slamdunk/bam", mode: 'copy', overwrite: 'true', pattern: "filter/*bam*",
-        saveAs: { filename ->
-                      if (filename.endsWith(".bam")) file(filename).getName()
-                      else if (filename.endsWith(".bai")) file(filename).getName()
-                }
+    publishDir path: "${params.outdir}/slamdunk/bam", mode: 'copy',
+               overwrite: 'true', pattern: "filter/*bam*",
+               saveAs: { filename ->
+                             if (filename.endsWith(".bam")) file(filename).getName()
+                             else if (filename.endsWith(".bai")) file(filename).getName()
+                       }
 
     input:
     set val(name), file(map) from slamdunkMap
@@ -448,9 +449,10 @@ process filter {
  * STEP 4 - Snp
  */
 process snp {
-    tag { name }
-    publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy', overwrite: 'true', pattern: "snp/*vcf",
-        saveAs: { it.endsWith(".vcf") ? file(it).getName() : it }
+    tag "$name"
+    publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy',
+               overwrite: 'true', pattern: "snp/*vcf",
+               saveAs: { it.endsWith(".vcf") ? file(it).getName() : it }
 
     input:
     set val(name), file(filter) from slamdunkFilter
@@ -477,26 +479,24 @@ process snp {
 vcfComb = slamdunkSnp.mix(vcfCombineChannel)
 
 // Join by column 3 (reads)
- slamdunkCount
-     .join(vcfComb)
-     .into{ slamdunkResultsChannel ;
-            slamdunkForRatesChannel ;
-            slamdunkForUtrRatesChannel ;
-            slamdunkForTcPerReadPosChannel ;
+slamdunkCount
+    .join(vcfComb)
+    .into { slamdunkResultsChannel
+            slamdunkForRatesChannel
+            slamdunkForUtrRatesChannel
+            slamdunkForTcPerReadPosChannel
             slamdunkForTcPerUtrPosChannel }
 
 /*
  * STEP 5 - Count
  */
 process count {
+    tag "$name"
+    label 'slamdunk_process'
 
-  label 'slamdunk_process'
-
-  publishDir path: "${params.outdir}/slamdunk/count/utrs", mode: 'copy',
-             overwrite: 'true', pattern: "count/*.tsv",
-             saveAs: { it.endsWith(".tsv") ? file(it).getName() : it  }
-
-    tag { name }
+    publishDir path: "${params.outdir}/slamdunk/count/utrs", mode: 'copy',
+               overwrite: 'true', pattern: "count/*.tsv",
+               saveAs: { it.endsWith(".tsv") ? file(it).getName() : it }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkResultsChannel
@@ -511,17 +511,17 @@ process count {
     !params.quantseq
 
     script:
-    snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
+    snpMode = params.vcf ? "-v $params.vcf" : "-s . "
     """
-    slamdunk count -o count \
-       -r ${fasta} \
-       ${snpMode} \
-       -b ${bed} \
-       -l ${params.read_length} \
-       -c ${params.conversions} \
-       -q ${params.base_quality} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    slamdunk count -o count \\
+        -r $fasta \\
+        $snpMode \\
+        -b $bed \\
+        -l $params.read_length \\
+        -c $params.conversions \\
+        -q $params.base_quality \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
@@ -529,14 +529,12 @@ process count {
  * STEP 6 - Collapse
  */
 process collapse {
-
+    tag "$name"
     label 'slamdunk_process'
 
     publishDir path: "${params.outdir}/slamdunk/count/genes", mode: 'copy',
                overwrite: 'true', pattern: "collapse/*.csv",
-               saveAs: { it.endsWith(".csv") ? file(it).getName() : it  }
-
-    tag { name }
+               saveAs: { it.endsWith(".csv") ? file(it).getName() : it }
 
     input:
     set val(name), file(count) from slamdunkCountOut
@@ -549,9 +547,10 @@ process collapse {
 
     script:
     """
-    alleyoop collapse -o collapse \
-       -t ${task.cpus} \
-       ${count}
+    alleyoop collapse \\
+        -o collapse \\
+        -t $task.cpus \
+        $count
     sed -i "1i# name:${name}" collapse/*csv
     """
 }
@@ -560,10 +559,8 @@ process collapse {
  * STEP 7 - rates
  */
 process rates {
-
+    tag "$name"
     label 'slamdunk_process'
-
-    tag { name }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkForRatesChannel
@@ -577,11 +574,12 @@ process rates {
 
     script:
     """
-    alleyoop rates -o rates \
-       -r ${fasta} \
-       -mq ${params.base_quality} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    alleyoop rates \\
+        -o rates \\
+        -r $fasta \\
+        -mq $params.base_quality \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
@@ -589,10 +587,8 @@ process rates {
  * STEP 8 - utrrates
  */
 process utrrates {
-
+    tag "$name"
     label 'slamdunk_process'
-
-    tag { name }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkForUtrRatesChannel
@@ -607,13 +603,14 @@ process utrrates {
 
     script:
     """
-    alleyoop utrrates -o utrrates \
-       -r ${fasta} \
-       -mq ${params.base_quality} \
-       -b ${bed} \
-       -l ${params.read_length} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    alleyoop utrrates \\
+        -o utrrates \\
+        -r $fasta \\
+        -mq $params.base_quality \\
+        -b $bed \\
+        -l $params.read_length \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
@@ -621,10 +618,8 @@ process utrrates {
  * STEP 9 - tcperreadpos
  */
 process tcperreadpos {
-
+    tag "$name"
     label 'slamdunk_process'
-
-    tag { name }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkForTcPerReadPosChannel
@@ -637,15 +632,16 @@ process tcperreadpos {
     !params.quantseq
 
     script:
-    snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
+    snpMode = params.vcf ? "-v $params.vcf" : "-s . "
     """
-    alleyoop tcperreadpos -o tcperreadpos \
-       -r ${fasta} \
-       ${snpMode} \
-       -mq ${params.base_quality} \
-       -l ${params.read_length} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    alleyoop tcperreadpos \\
+        -o tcperreadpos \\
+        -r $fasta \\
+        $snpMode \\
+        -mq $params.base_quality \\
+        -l $params.read_length \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
