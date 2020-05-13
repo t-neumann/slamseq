@@ -205,6 +205,7 @@ if (workflow.profile.contains('awsbatch')) {
 ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
 ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config, checkIfExists: true) : Channel.empty()
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
+ch_output_docs_images = file("$baseDir/docs/images/", checkIfExists: true)
 
 /*
  * Create a channel for sample list
@@ -649,10 +650,8 @@ process tcperreadpos {
  * STEP 10 - tcperutrpos
  */
 process tcperutrpos {
-
+    tag "$name"
     label 'slamdunk_process'
-
-    tag { name }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkForTcPerUtrPosChannel
@@ -666,31 +665,32 @@ process tcperutrpos {
     !params.quantseq
 
     script:
-    snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
+    snpMode = params.vcf ? "-v $params.vcf" : "-s . "
     """
-    alleyoop tcperutrpos -o tcperutrpos \
-       -r ${fasta} \
-       -b ${bed} \
-       ${snpMode} \
-       -mq ${params.base_quality} \
-       -l ${params.read_length} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    alleyoop tcperutrpos \\
+        -o tcperutrpos \\
+        -r $fasta \\
+        -b $bed \\
+        $snpMode \\
+        -mq $params.base_quality \\
+        -l $params.read_length \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
 slamdunkFilterSummary
-   .flatten()
-   .filter( ~/.*bam$/ )
-   .collect()
-   .set { slamdunkFilterSummaryCollected }
+    .flatten()
+    .filter( ~/.*bam$/ )
+    .collect()
+    .set { slamdunkFilterSummaryCollected }
 
 slamdunkCountAlleyoop
-   .collect()
-   .flatten()
-   .filter( ~/.*tsv$/ )
-   .collect()
-   .set{ slamdunkCountAlleyoopCollected }
+    .collect()
+    .flatten()
+    .filter( ~/.*tsv$/ )
+    .collect()
+    .set { slamdunkCountAlleyoopCollected }
 
 /*
  * STEP 11 - Summary
@@ -707,27 +707,24 @@ process summary {
     script:
     countFolderFlag = !params.quantseq ? "-t ./count" : ""
     """
-    alleyoop summary -o summary.txt ${countFolderFlag} ./filter/*bam
+    alleyoop summary \\
+        -o summary.txt \\
+        $countFolderFlag \\
+        ./filter/*bam
     """
 }
 
-
 conditionDeconvolution
-    .map{it ->
-        return tuple(it.name, it.group)
-    }
+    .map { it -> return tuple(it.name, it.group) }
     .join(slamdunkCollapseOut)
-    .map{it ->
-        return tuple(it[1],it[2])
-    }
+    .map { it -> return tuple(it[1],it[2]) }
     .groupTuple()
-    .set{ deseq2FileChannel }
+    .set { deseq2FileChannel }
 
 /*
  * STEP 12 - DESeq2
  */
 process deseq2 {
-
     label 'slamdunk_process'
 
     publishDir path: "${params.outdir}/deseq2", mode: 'copy', overwrite: 'true'
@@ -743,9 +740,8 @@ process deseq2 {
     !params.quantseq && !params.skip_deseq2
 
     script:
-
     """
-    deseq2_slamdunk.r -t ${group} -d ${conditions} -c counts -p ${params.pvalue} -O ${group}
+    deseq2_slamdunk.r -t $group -d $conditions -c counts -p $params.pvalue -O $group
     """
 }
 
@@ -790,6 +786,7 @@ process output_documentation {
 
     input:
     file output_docs from ch_output_docs
+    file images from ch_output_docs_images
 
     output:
     file "results_description.html"
