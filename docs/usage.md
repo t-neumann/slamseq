@@ -335,7 +335,6 @@ Full path to VCF file for genomic SNPs to mask T>C conversions (optional). Bypas
 
 Do not load `igenomes.config` when running the pipeline. You may choose this option if you observe clashes between custom parameters and those supplied in `igenomes.config`.
 
-
 ## Processing parameters
 
 ### `--trim5`
