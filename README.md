@@ -6,6 +6,7 @@
 
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
 [![Docker](https://img.shields.io/docker/automated/nfcore/slamseq.svg)](https://hub.docker.com/r/nfcore/slamseq)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3826585.svg)](https://doi.org/10.5281/zenodo.3826585)
 
 ## Introduction
 
@@ -72,8 +73,7 @@ For further information or help, don't hesitate to get in touch on [Slack](https
 
 ## Citation
 
-<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
-<!-- If you use  nf-core/slamseq for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+If you use  nf-core/slamseq for your analysis, please cite it using the following doi: [10.5281/zenodo.3826585](https://doi.org/10.5281/zenodo.3826585)
 
 You can cite `slamdunk` as follows:
 
