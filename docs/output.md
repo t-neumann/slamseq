@@ -51,6 +51,8 @@ As with every PCA plot, your replicates should cluster together and your conditi
 This plot shows the individual base substitutions in your reads across the entire read set. For SLAMseq datasets you should see an excess of T>C conversions with increasing labelling times. The plot below shows samples with mock treatment (DMSO) and transcriptional inhibition with a CDK9-inhibitor (NVP) where transcription is blocked which is reflected in the loss of the T>C conversion excess.
 
 ![MultiQC - Slamdunk rates plot](images/slamdunk_rates.png)
+![MultiQC - Slamdunk rates plot](images/overallratesplot_scale1.png)
+![MultiQC - Slamdunk rates plot](images/overallratesplot_scale2.png)
 
 *UTR rates*:
 
