@@ -38,7 +38,7 @@ def path_base_name(path):
 ############################################
 
 Description = 'Reformat nfcore/slamseq design file and check its contents.'
-Epilog = """Example usage: python check_design.py <DESIGN_FILE_IN> <DESIGN_FILE_OUT>"""
+Epilog = "Example usage: python check_design.py <DESIGN_FILE_IN> <DESIGN_FILE_OUT>"
 
 argParser = argparse.ArgumentParser(description=Description, epilog=Epilog)
 

@@ -21,7 +21,6 @@ def helpMessage() {
 
     Mandatory arguments:
       --input [file]                  Tab-separated file containing information about the samples in the experiment (see docs/usage.md)
-
       -profile [str]                  Configuration profile to use. Can use multiple (comma separated)
                                       Available: conda, docker, singularity, test, awsbatch, <institute> and more
 
@@ -43,11 +42,11 @@ def helpMessage() {
       --min_coverage [int]            Minimimum coverage to call a SNP.
       --var_fraction [float]          Minimimum variant fraction to call a SNP.
       --conversions [int]             Minimum number of conversions to count a read as converted read
-      --base_quality [int]             Minimum base quality to filter conversions
-      --read_length [int]              Read length of processed reads
+      --base_quality [int]            Minimum base quality to filter conversions
+      --read_length [int]             Read length of processed reads
       --pvalue [float]                P-value cutoff for MA plot
-      --skip_trimming [bool]           Skip trimming step
-      --skip_deseq2 [bool]             Skip trimming step
+      --skip_trimming [bool]          Skip trimming step
+      --skip_deseq2 [bool]            Skip trimming step
 
     Other options:
       --outdir [file]                 The output directory where the results will be saved
@@ -87,57 +86,57 @@ if (!params.input) exit 1, "Input design file not specified!"
 
 params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : false
 if (params.fasta) {
-  if (params.fasta.endsWith(".gz")) {
-    Channel
-        .fromPath( params.fasta,  checkIfExists: true)
-        .set { fastaGunzipChannel }
+    if (params.fasta.endsWith(".gz")) {
+        Channel
+            .fromPath(params.fasta,  checkIfExists: true)
+            .set { fastaGunzipChannel }
 
-    process gunzipFasta {
-          tag "$params.fasta"
+        process gunzipFasta {
+            tag "$fasta"
 
-          input:
-          file fasta from fastaGunzipChannel
+            input:
+            file fasta from fastaGunzipChannel
 
-          output:
-          file "ref.fa" into fastaMapChannel,
-                           fastaSnpChannel,
-                           fastaCountChannel,
-                           fastaRatesChannel,
-                           fastaUtrRatesChannel,
-                           fastaReadPosChannel,
-                           fastaUtrPosChannel
+            output:
+            file "ref.fa" into fastaMapChannel,
+                               fastaSnpChannel,
+                               fastaCountChannel,
+                               fastaRatesChannel,
+                               fastaUtrRatesChannel,
+                               fastaReadPosChannel,
+                               fastaUtrPosChannel
 
-          script:
-          """
-          gunzip -c ${fasta} > ref.fa
-          """
+            script:
+            """
+            gunzip -c $fasta > ref.fa
+            """
+        }
+    } else {
+        Channel
+            .fromPath(params.fasta, checkIfExists: true)
+            .into { fastaMapChannel
+                    fastaSnpChannel
+                    fastaCountChannel
+                    fastaRatesChannel
+                    fastaUtrRatesChannel
+                    fastaReadPosChannel
+                    fastaUtrPosChannel }
     }
-  } else {
-    Channel
-        .fromPath( params.fasta,  checkIfExists: true)
-        .into { fastaMapChannel ;
-                fastaSnpChannel ;
-                fastaCountChannel ;
-                fastaRatesChannel ;
-                fastaUtrRatesChannel ;
-                fastaReadPosChannel ;
-                fastaUtrPosChannel }
-  }
 } else {
-  exit 1, "Fasta file not specified!"
+    exit 1, "Fasta file not specified!"
 }
 
 if (!params.bed && !params.genome) exit 1, "Bed file not specified!"
 
 if (!params.bed) {
-	gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
+    gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
 
-  Channel
+    Channel
         .fromPath(gtf, checkIfExists: true)
         .ifEmpty { exit 1, "GTF annotation file not found: ${gtf}" }
-        .set{ gtfChannel }
+        .set { gtfChannel }
 
-  process gtf2bed {
+    process gtf2bed {
         tag "$gtf"
 
         input:
@@ -153,36 +152,36 @@ if (!params.bed) {
         """
         gtf2bed.py $gtf | sort -k1,1 -k2,2n > ${gtf.baseName}.3utr.bed
         """
-  }
+    }
 } else {
-  Channel
+    Channel
         .fromPath(params.bed, checkIfExists: true)
         .ifEmpty { exit 1, "BED 3' UTR annotation file not found: ${params.bed}" }
-        .into { utrFilterChannel ;
-                utrCountChannel ;
-                utrratesChannel ;
+        .into { utrFilterChannel
+                utrCountChannel
+                utrratesChannel
                 utrposChannel }
 }
 
 // Read length must be supplied
-if ( !params.read_length ) exit 1, "Read length must be supplied."
+if (!params.read_length) exit 1, "Read length must be supplied."
 
-if ( params.mapping ) {
-  Channel
+if (params.mapping) {
+    Channel
         .fromPath(params.mapping, checkIfExists: true)
         .ifEmpty { exit 1, "Mapping file not found: ${params.mapping}" }
-        .set{ utrFilterChannel }
+        .set { utrFilterChannel }
 }
 
-if ( params.vcf ) {
-  Channel
+if (params.vcf) {
+    Channel
         .fromPath(params.vcf, checkIfExists: true)
         .ifEmpty { exit 1, "Vcf file not found: ${params.vcf}" }
-        .set{ vcfChannel }
+        .set { vcfChannel }
 } else {
-  Channel
+    Channel
         .empty()
-        .set{ vcfChannel }
+        .set { vcfChannel }
 }
 
 // Has the run name been specified by the user?
@@ -206,14 +205,15 @@ if (workflow.profile.contains('awsbatch')) {
 ch_multiqc_config = file("$baseDir/assets/multiqc_config.yaml", checkIfExists: true)
 ch_multiqc_custom_config = params.multiqc_config ? Channel.fromPath(params.multiqc_config, checkIfExists: true) : Channel.empty()
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
+ch_output_docs_images = file("$baseDir/docs/images/", checkIfExists: true)
 
 /*
  * Create a channel for sample list
  */
- Channel
-    .fromPath( params.input, checkIfExists: true )
+Channel
+    .fromPath(params.input, checkIfExists: true)
     .ifEmpty { exit 1, "input file not found: ${params.input}" }
-    .set{ checkChannel }
+    .set { checkChannel }
 
 // Header log info
 log.info nfcoreHeader()
@@ -311,107 +311,112 @@ process get_software_versions {
  * Check design
  */
 process checkDesign {
+    tag "$design"
 
     input:
-    file (design) from checkChannel
+    file design from checkChannel
 
     output:
-    file "nfcore_slamseq_design.txt" into rawFileChannel,
-                                          deseq2ConditionChannel,
-                                          splitChannel,
-                                          vcfSampleChannel
+    file "*.txt" into rawFileChannel,
+                      deseq2ConditionChannel,
+                      splitChannel,
+                      vcfSampleChannel
 
     script:
     """
-    check_design.py ${design} nfcore_slamseq_design.txt
+    check_design.py $design nfcore_slamseq_design.txt
     """
 }
 
 rawFileChannel
-   .splitCsv( header: true, sep: '\t' )
-   .map { row -> tuple(row, file(row.reads, checkIfExists: true) ) }
-   .set { rawFiles }
+    .splitCsv( header: true, sep: '\t' )
+    .map { row -> tuple(row, file(row.reads, checkIfExists: true) ) }
+    .set { rawFiles }
 
 splitChannel
-   .splitCsv( header: true, sep: '\t' )
-   .set { conditionDeconvolution }
+    .splitCsv( header: true, sep: '\t' )
+    .set { conditionDeconvolution }
 
 vcfSampleChannel
-   .splitCsv( header: true, sep: '\t' )
-   .map{it ->
-       return it.name
-   }
-   .combine(vcfChannel)
-   .set{ vcfCombineChannel }
+    .splitCsv( header: true, sep: '\t' )
+    .map{ it -> return it.name }
+    .combine(vcfChannel)
+    .set{ vcfCombineChannel }
 
 /*
  * STEP 1 - TrimGalore!
  */
 if (params.skip_trimming) {
     rawFiles
-       .map{it ->
-        return tuple(it, file(it.reads))
-       }
-       .set{ trimmedFiles }
+        .map{ it -> return tuple(it, file(it.reads)) }
+        .set{ trimmedFiles }
     trimgaloreQC = Channel.empty()
     trimgaloreFastQC = Channel.empty()
 } else {
-  process trim {
+    process trim {
+        tag "$meta.name"
 
-       tag { meta.name }
+        input:
+        set val(meta), file(reads) from rawFiles
 
-       input:
-       set val(meta), file(reads) from rawFiles
+        output:
+        set val(meta), file("TrimGalore/${meta.name}_trimmed.fq.gz") into trimmedFiles
+        file ("TrimGalore/*.txt") into trimgaloreQC
+        file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
 
-       output:
-       set val(meta), file("TrimGalore/${meta.name}_trimmed.fq.gz") into trimmedFiles
-       file ("TrimGalore/*.txt") into trimgaloreQC
-       file ("TrimGalore/*.{zip,html}") into trimgaloreFastQC
-
-       script:
-       """
-       mkdir -p TrimGalore
-       trim_galore ${reads} --stringency 3 --fastqc \
-                            --cores ${task.cpus} --output_dir TrimGalore \
-                            --basename ${meta.name}
-       """
-  }
+        script:
+        """
+        mkdir -p TrimGalore
+        trim_galore \\
+            $reads \\
+            --stringency 3 \\
+            --fastqc \\
+            --cores $task.cpus \\
+            --output_dir TrimGalore \\
+            --basename ${meta.name}
+        """
+    }
 }
 
 /*
  * STEP 2 - Map
  */
- process map {
+process map {
+    tag "$meta.name"
 
-     tag { meta.name }
+    input:
+    set val(meta), file(fastq) from trimmedFiles
+    each file(fasta) from fastaMapChannel
 
-     input:
-     set val(meta), file(fastq) from trimmedFiles
-     each file(fasta) from fastaMapChannel
+    output:
+    set val(meta.name), file("map/*bam") into slamdunkMap
 
-     output:
-     set val(meta.name), file("map/*bam") into slamdunkMap
-
-     script:
-     quantseq = params.quantseq ? "-q" : ""
-     endtoend = params.endtoend ? "-e" : ""
-     """
-     slamdunk map -r ${fasta} -o map \
-        -5 ${params.trim5} -n 100 \
-        -a ${params.polyA} -t ${task.cpus} \
-        --sampleName ${meta.name} \
-        --sampleType ${meta.type} \
-        --sampleTime ${meta.time} --skip-sam \
-        ${quantseq} ${endtoend} \
-        ${fastq}
-     """
+    script:
+    quantseq = params.quantseq ? "-q" : ""
+    endtoend = params.endtoend ? "-e" : ""
+    """
+    slamdunk map \\
+        -r $fasta \\
+        -o map \\
+        -5 $params.trim5 \\
+        -n 100 \\
+        -a $params.polyA \\
+        -t $task.cpus \\
+        --sampleName ${meta.name} \\
+        --sampleType ${meta.type} \\
+        --sampleTime ${meta.time} \\
+        --skip-sam \\
+        $quantseq \\
+        $endtoend \\
+        $fastq
+    """
  }
 
  /*
   * STEP 3 - Filter
   */
-  process filter {
-
+process filter {
+    tag "$name"
     label 'slamdunk_process'
 
     publishDir path: "${params.outdir}/slamdunk/bam", mode: 'copy',
@@ -421,82 +426,78 @@ if (params.skip_trimming) {
                              else if (filename.endsWith(".bai")) file(filename).getName()
                        }
 
-      tag { name }
+    input:
+    set val(name), file(map) from slamdunkMap
+    each file(bed) from utrFilterChannel
 
-      input:
-      set val(name), file(map) from slamdunkMap
-      each file(bed) from utrFilterChannel
+    output:
+    set val(name), file("filter/*bam*") into slamdunkFilter,
+                                             slamdunkCount,
+                                             slamdunkFilterSummary
 
-      output:
-      set val(name), file("filter/*bam*") into slamdunkFilter,
-                                               slamdunkCount,
-                                               slamdunkFilterSummary
-
-      script:
-      multimappers = params.multimappers ? "-b ${bed}" : ""
-
-      """
-      slamdunk filter -o filter ${multimappers} \
-         -t ${task.cpus} \
-         ${map}
-      """
-  }
+    script:
+    multimappers = params.multimappers ? "-b ${bed}" : ""
+    """
+    slamdunk filter \\
+        -o filter \\
+        $multimappers \\
+       -t $task.cpus \\
+       $map
+    """
+}
 
 /*
  * STEP 4 - Snp
  */
- process snp {
+process snp {
+    tag "$name"
+    publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy',
+               overwrite: 'true', pattern: "snp/*vcf",
+               saveAs: { it.endsWith(".vcf") ? file(it).getName() : it }
 
-   publishDir path: "${params.outdir}/slamdunk/vcf", mode: 'copy',
-              overwrite: 'true', pattern: "snp/*vcf",
-              saveAs: { it.endsWith(".vcf") ? file(it).getName() : it  }
+    input:
+    set val(name), file(filter) from slamdunkFilter
+    each file(fasta) from fastaSnpChannel
 
-     tag { name }
+    output:
+    set val(name), file("snp/*vcf") into slamdunkSnp
 
-     input:
-     set val(name), file(filter) from slamdunkFilter
-     each file(fasta) from fastaSnpChannel
+    when:
+    !params.vcf && !params.quantseq
 
-     output:
-     set val(name), file("snp/*vcf") into slamdunkSnp
-
-     when:
-     !params.vcf && !params.quantseq
-
-     script:
-     """
-     slamdunk snp -o snp \
-        -r ${fasta} \
-        -c ${params.min_coverage} \
-        -f ${params.var_fraction} \
-        -t ${task.cpus} \
+    script:
+    """
+    slamdunk snp \\
+        -o snp \\
+        -r $fasta \\
+        -c $params.min_coverage \\
+        -f $params.var_fraction \\
+        -t $task.cpus \\
         ${filter[0]}
-     """
- }
+    """
+}
 
 vcfComb = slamdunkSnp.mix(vcfCombineChannel)
 
 // Join by column 3 (reads)
- slamdunkCount
-     .join(vcfComb)
-     .into{ slamdunkResultsChannel ;
-            slamdunkForRatesChannel ;
-            slamdunkForUtrRatesChannel ;
-            slamdunkForTcPerReadPosChannel ;
+slamdunkCount
+    .join(vcfComb)
+    .into { slamdunkResultsChannel
+            slamdunkForRatesChannel
+            slamdunkForUtrRatesChannel
+            slamdunkForTcPerReadPosChannel
             slamdunkForTcPerUtrPosChannel }
 
 /*
  * STEP 5 - Count
  */
 process count {
+    tag "$name"
+    label 'slamdunk_process'
 
-  label 'slamdunk_process'
-
-  publishDir path: "${params.outdir}/slamdunk/count/utrs", mode: 'copy',
-             overwrite: 'true', pattern: "count/*.tsv",
-             saveAs: { it.endsWith(".tsv") ? file(it).getName() : it  }
-
-    tag { name }
+    publishDir path: "${params.outdir}/slamdunk/count/utrs", mode: 'copy',
+               overwrite: 'true', pattern: "count/*.tsv",
+               saveAs: { it.endsWith(".tsv") ? file(it).getName() : it }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkResultsChannel
@@ -511,17 +512,17 @@ process count {
     !params.quantseq
 
     script:
-    snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
+    snpMode = params.vcf ? "-v $params.vcf" : "-s . "
     """
-    slamdunk count -o count \
-       -r ${fasta} \
-       ${snpMode} \
-       -b ${bed} \
-       -l ${params.read_length} \
-       -c ${params.conversions} \
-       -q ${params.base_quality} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    slamdunk count -o count \\
+        -r $fasta \\
+        $snpMode \\
+        -b $bed \\
+        -l $params.read_length \\
+        -c $params.conversions \\
+        -q $params.base_quality \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
@@ -529,14 +530,12 @@ process count {
  * STEP 6 - Collapse
  */
 process collapse {
-
+    tag "$name"
     label 'slamdunk_process'
 
     publishDir path: "${params.outdir}/slamdunk/count/genes", mode: 'copy',
                overwrite: 'true', pattern: "collapse/*.csv",
-               saveAs: { it.endsWith(".csv") ? file(it).getName() : it  }
-
-    tag { name }
+               saveAs: { it.endsWith(".csv") ? file(it).getName() : it }
 
     input:
     set val(name), file(count) from slamdunkCountOut
@@ -549,9 +548,10 @@ process collapse {
 
     script:
     """
-    alleyoop collapse -o collapse \
-       -t ${task.cpus} \
-       ${count}
+    alleyoop collapse \\
+        -o collapse \\
+        -t $task.cpus \
+        $count
     sed -i "1i# name:${name}" collapse/*csv
     """
 }
@@ -560,10 +560,8 @@ process collapse {
  * STEP 7 - rates
  */
 process rates {
-
+    tag "$name"
     label 'slamdunk_process'
-
-    tag { name }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkForRatesChannel
@@ -577,11 +575,12 @@ process rates {
 
     script:
     """
-    alleyoop rates -o rates \
-       -r ${fasta} \
-       -mq ${params.base_quality} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    alleyoop rates \\
+        -o rates \\
+        -r $fasta \\
+        -mq $params.base_quality \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
@@ -589,10 +588,8 @@ process rates {
  * STEP 8 - utrrates
  */
 process utrrates {
-
+    tag "$name"
     label 'slamdunk_process'
-
-    tag { name }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkForUtrRatesChannel
@@ -607,13 +604,14 @@ process utrrates {
 
     script:
     """
-    alleyoop utrrates -o utrrates \
-       -r ${fasta} \
-       -mq ${params.base_quality} \
-       -b ${bed} \
-       -l ${params.read_length} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    alleyoop utrrates \\
+        -o utrrates \\
+        -r $fasta \\
+        -mq $params.base_quality \\
+        -b $bed \\
+        -l $params.read_length \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
@@ -621,10 +619,8 @@ process utrrates {
  * STEP 9 - tcperreadpos
  */
 process tcperreadpos {
-
+    tag "$name"
     label 'slamdunk_process'
-
-    tag { name }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkForTcPerReadPosChannel
@@ -637,15 +633,16 @@ process tcperreadpos {
     !params.quantseq
 
     script:
-    snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
+    snpMode = params.vcf ? "-v $params.vcf" : "-s . "
     """
-    alleyoop tcperreadpos -o tcperreadpos \
-       -r ${fasta} \
-       ${snpMode} \
-       -mq ${params.base_quality} \
-       -l ${params.read_length} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    alleyoop tcperreadpos \\
+        -o tcperreadpos \\
+        -r $fasta \\
+        $snpMode \\
+        -mq $params.base_quality \\
+        -l $params.read_length \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
@@ -653,10 +650,8 @@ process tcperreadpos {
  * STEP 10 - tcperutrpos
  */
 process tcperutrpos {
-
+    tag "$name"
     label 'slamdunk_process'
-
-    tag { name }
 
     input:
     set val(name), file(filter), file(snp) from slamdunkForTcPerUtrPosChannel
@@ -670,31 +665,32 @@ process tcperutrpos {
     !params.quantseq
 
     script:
-    snpMode = params.vcf ? "-v ${params.vcf}" : "-s . "
+    snpMode = params.vcf ? "-v $params.vcf" : "-s . "
     """
-    alleyoop tcperutrpos -o tcperutrpos \
-       -r ${fasta} \
-       -b ${bed} \
-       ${snpMode} \
-       -mq ${params.base_quality} \
-       -l ${params.read_length} \
-       -t ${task.cpus} \
-       ${filter[0]}
+    alleyoop tcperutrpos \\
+        -o tcperutrpos \\
+        -r $fasta \\
+        -b $bed \\
+        $snpMode \\
+        -mq $params.base_quality \\
+        -l $params.read_length \\
+        -t $task.cpus \\
+        ${filter[0]}
     """
 }
 
 slamdunkFilterSummary
-   .flatten()
-   .filter( ~/.*bam$/ )
-   .collect()
-   .set { slamdunkFilterSummaryCollected }
+    .flatten()
+    .filter( ~/.*bam$/ )
+    .collect()
+    .set { slamdunkFilterSummaryCollected }
 
 slamdunkCountAlleyoop
-   .collect()
-   .flatten()
-   .filter( ~/.*tsv$/ )
-   .collect()
-   .set{ slamdunkCountAlleyoopCollected }
+    .collect()
+    .flatten()
+    .filter( ~/.*tsv$/ )
+    .collect()
+    .set { slamdunkCountAlleyoopCollected }
 
 /*
  * STEP 11 - Summary
@@ -711,27 +707,24 @@ process summary {
     script:
     countFolderFlag = !params.quantseq ? "-t ./count" : ""
     """
-    alleyoop summary -o summary.txt ${countFolderFlag} ./filter/*bam
+    alleyoop summary \\
+        -o summary.txt \\
+        $countFolderFlag \\
+        ./filter/*bam
     """
 }
 
-
 conditionDeconvolution
-    .map{it ->
-        return tuple(it.name, it.group)
-    }
+    .map { it -> return tuple(it.name, it.group) }
     .join(slamdunkCollapseOut)
-    .map{it ->
-        return tuple(it[1],it[2])
-    }
+    .map { it -> return tuple(it[1],it[2]) }
     .groupTuple()
-    .set{ deseq2FileChannel }
+    .set { deseq2FileChannel }
 
 /*
  * STEP 12 - DESeq2
  */
 process deseq2 {
-
     label 'slamdunk_process'
 
     publishDir path: "${params.outdir}/deseq2", mode: 'copy', overwrite: 'true'
@@ -747,9 +740,8 @@ process deseq2 {
     !params.quantseq && !params.skip_deseq2
 
     script:
-
     """
-    deseq2_slamdunk.r -t ${group} -d ${conditions} -c counts -p ${params.pvalue} -O ${group}
+    deseq2_slamdunk.r -t $group -d $conditions -c counts -p $params.pvalue -O $group
     """
 }
 
@@ -794,6 +786,7 @@ process output_documentation {
 
     input:
     file output_docs from ch_output_docs
+    file images from ch_output_docs_images
 
     output:
     file "results_description.html"
