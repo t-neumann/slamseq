@@ -22,7 +22,7 @@ jobs:
       - name: Pull docker image
         run: |
           docker pull nfcore/slamseq:dev
-          docker tag nfcore/slamseq:dev nfcore/slamseq:1.0.0
+          docker tag nfcore/slamseq:dev nfcore/slamseq:dev
       - name: Run pipeline with test data
         run: |
           nextflow run ${GITHUB_WORKSPACE} -profile test,docker
