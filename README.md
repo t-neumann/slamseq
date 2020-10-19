@@ -1,10 +1,12 @@
 # ![nf-core/slamseq](docs/images/nf-core-slamseq_logo.png)
 
+**SLAMseq analysis using Slamdunk with various T>C conversion quantifications and QC**.
+
 [![GitHub Actions CI Status](https://github.com/nf-core/slamseq/workflows/nf-core%20CI/badge.svg)](https://github.com/nf-core/slamseq/actions)
 [![GitHub Actions Linting Status](https://github.com/nf-core/slamseq/workflows/nf-core%20linting/badge.svg)](https://github.com/nf-core/slamseq/actions)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
 
-[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
+[![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](https://bioconda.github.io/)
 [![Docker](https://img.shields.io/docker/automated/nfcore/slamseq.svg)](https://hub.docker.com/r/nfcore/slamseq)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3826585.svg)](https://doi.org/10.5281/zenodo.3826585)
 

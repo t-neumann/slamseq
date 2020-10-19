@@ -61,9 +61,7 @@ Nextflow handles job submissions on SLURM or other environments, and supervises 
 
 It is recommended to limit the Nextflow Java virtual machines memory. We recommend adding the following line to your environment (typically in `~/.bashrc` or `~./bash_profile`):
 
-```bash
-NXF_OPTS='-Xms1g -Xmx4g'
-```
+<!-- TODO nf-core: Add documentation about anything specific to running your pipeline. For general topics, please point to (and add to) the main nf-core website. -->
 
 ## Running the pipeline
 
@@ -263,13 +261,13 @@ Example design files have been provided in the [test-datasets](../assets/design_
 
 ## Reference genomes
 
-The pipeline config files come bundled with paths to the illumina iGenomes reference index files. If running with docker or AWS, the configuration is set up to use the [AWS-iGenomes](https://ewels.github.io/AWS-iGenomes/) resource.
+Specify this when restarting a pipeline. Nextflow will used cached results from any pipeline steps where the inputs are the same, continuing from where it got to previously.
 
 ### `--genome` (using iGenomes)
 
 There are 31 different species supported in the iGenomes references. To run the pipeline, you must specify which to use with the `--genome` flag.
 
-You can find the keys to specify the genomes in the [iGenomes config file](../conf/igenomes.config). Common genomes that are supported are:
+### `-c`
 
 * Human
   * `--genome GRCh38`
@@ -280,11 +278,11 @@ You can find the keys to specify the genomes in the [iGenomes config file](../co
 * _S. cerevisiae_
   * `--genome 'R64-1-1'`
 
-> There are numerous others - check the config file for more.
+#### Custom resource requests
 
-Note that you can use the same configuration setup to save sets of reference files for your own use, even if they are not part of the iGenomes resource. See the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html) for instructions on where to save such a file.
+Each step in the pipeline has a default set of requirements for number of CPUs, memory and time. For most of the steps in the pipeline, if the job exits with an error code of `143` (exceeded requested resources) it will automatically resubmit with higher requests (2 x original, then 3 x original). If it still fails after three times then the pipeline is stopped.
 
-The syntax for this reference configuration is as follows:
+Whilst these default requirements will hopefully work for most people with most data, you may find that you want to customise the compute resources that the pipeline requests. You can do this by creating a custom config file. For example, to give the workflow process `star` 32GB of memory, you could use the following config:
 
 ```nextflow
 params {
@@ -451,9 +449,9 @@ The AWS region in which to run your job. Default is set to `eu-west-1` but can b
 
 The [AWS CLI](https://www.nextflow.io/docs/latest/awscloud.html#aws-cli-installation) path in your custom AMI. Default: `/home/ec2-user/miniconda/bin/aws`.
 
-Please make sure to also set the `-w/--work-dir` and `--outdir` parameters to a S3 storage bucket of your choice - you'll get an error message notifying you if you didn't.
+If you have any questions or issues please send us a message on [Slack](https://nf-co.re/join/slack) on the [`#configs` channel](https://nfcore.slack.com/channels/configs).
 
-## Other command line parameters
+### Running in the background
 
 ### `--outdir`
 

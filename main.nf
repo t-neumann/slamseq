@@ -185,7 +185,7 @@ if (params.vcf) {
 }
 
 // Has the run name been specified by the user?
-//  this has the bonus effect of catching both -name and --name
+// this has the bonus effect of catching both -name and --name
 custom_runName = params.name
 if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
     custom_runName = workflow.runName
@@ -248,10 +248,12 @@ if (workflow.profile.contains('awsbatch')) {
     summary['AWS Queue']    = params.awsqueue
     summary['AWS CLI']      = params.awscli
 }
-summary['Config Profile'] = workflow.profile
-if (params.config_profile_description) summary['Config Description'] = params.config_profile_description
-if (params.config_profile_contact)     summary['Config Contact']     = params.config_profile_contact
-if (params.config_profile_url)         summary['Config URL']         = params.config_profile_url
+
+if (params.config_profile_description) summary['Config Profile Description'] = params.config_profile_description
+if (params.config_profile_contact)     summary['Config Profile Contact']     = params.config_profile_contact
+if (params.config_profile_url)         summary['Config Profile URL']         = params.config_profile_url
+
+summary['Config Files'] = workflow.configFiles.join(', ')
 if (params.email || params.email_on_fail) {
     summary['E-mail Address']    = params.email
     summary['E-mail on failure'] = params.email_on_fail
@@ -283,7 +285,7 @@ Channel.from(summary.collect{ [it.key, it.value] })
  * Parse software version numbers
  */
 process get_software_versions {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy',
+    publishDir "${params.outdir}/pipeline_info", mode: params.publish_dir_mode,
         saveAs: { filename ->
                       if (filename.indexOf(".csv") > 0) filename
                       else null
@@ -749,7 +751,7 @@ process deseq2 {
  * STEP 13 - MultiQC
  */
 process multiqc {
-    publishDir "${params.outdir}/multiqc", mode: 'copy'
+    publishDir "${params.outdir}/MultiQC", mode: params.publish_dir_mode
 
     input:
     file (multiqc_config) from ch_multiqc_config
@@ -782,7 +784,7 @@ process multiqc {
  * STEP 14 - Output Description HTML
  */
 process output_documentation {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
+    publishDir "${params.outdir}/pipeline_info", mode: params.publish_dir_mode
 
     input:
     file output_docs from ch_output_docs

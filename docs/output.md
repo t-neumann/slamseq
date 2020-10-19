@@ -126,14 +126,24 @@ We produce several versions of MA plots for each contrast, the most important be
 
 [MultiQC](http://multiqc.info) is a visualisation tool that generates a single HTML report summarising all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in within the report data directory.
 
-The pipeline has special steps which allow the software versions used to be reported in the MultiQC output for future traceability.
+[MultiQC](http://multiqc.info) is a visualization tool that generates a single HTML report summarizing all samples in your project. Most of the pipeline QC results are visualised in the report and further statistics are available in the report data directory.
 
-**Output directory: `results/multiqc`**
+The pipeline has special steps which also allow the software versions to be reported in the MultiQC output for future traceability.
 
-* `Project_multiqc_report.html`
-  * MultiQC report - a standalone HTML file that can be viewed in your web browser
-* `Project_multiqc_data/`
-  * Directory containing parsed statistics from the different tools used in the pipeline
+For more information about how to use MultiQC reports, see [https://multiqc.info](https://multiqc.info).
+
+**Output files:**
+
+* `multiqc/`  
+  * `multiqc_report.html`: a standalone HTML file that can be viewed in your web browser.
+  * `multiqc_data/`: directory containing parsed statistics from the different tools used in the pipeline.
+  * `multiqc_plots/`: directory containing static images from the report in various formats.
+
+## Pipeline information
+
+[Nextflow](https://www.nextflow.io/docs/latest/tracing.html) provides excellent functionality for generating various reports relevant to the running and execution of the pipeline. This will allow you to troubleshoot errors with the running of the pipeline, and also provide you with other information such as launch commands, run times and resource usage.
+
+**Output files:**
 
 For more information about how to use MultiQC reports, see [http://multiqc.info](http://multiqc.info)
 
